@@ -1,0 +1,51 @@
+import { lazy, Suspense } from 'react'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
+import AppShell from './components/layout/AppShell'
+
+const Landing = lazy(() => import('./pages/Landing'))
+const Login = lazy(() => import('./pages/Login'))
+const Signup = lazy(() => import('./pages/Signup'))
+const Pricing = lazy(() => import('./pages/Pricing'))
+const Upload = lazy(() => import('./pages/Upload'))
+const Processing = lazy(() => import('./pages/Processing'))
+const Report = lazy(() => import('./pages/Report'))
+const History = lazy(() => import('./pages/History'))
+const Admin = lazy(() => import('./pages/Admin'))
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-bg-primary">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin" />
+        <span className="text-text-secondary font-body text-sm">Loading...</span>
+      </div>
+    </div>
+  )
+}
+
+export default function App() {
+  const location = useLocation()
+
+  return (
+    <div className="grain-overlay">
+      <Suspense fallback={<PageLoader />}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/app" element={<AppShell />}>
+              <Route path="upload" element={<Upload />} />
+              <Route path="processing" element={<Processing />} />
+              <Route path="report/:sessionId" element={<Report />} />
+              <Route path="history" element={<History />} />
+            </Route>
+            <Route path="/admin" element={<Admin />} />
+          </Routes>
+        </AnimatePresence>
+      </Suspense>
+    </div>
+  )
+}
