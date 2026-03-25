@@ -74,6 +74,7 @@ export interface FrequencyAnalysis {
   bands: FrequencyBand[]
   issues: FrequencyIssue[]
   score: number
+  insights: TabInsight[]
 }
 
 export interface DynamicsMetrics {
@@ -104,6 +105,7 @@ export interface DynamicsAnalysis {
   overCompressionDetected: boolean
   compressionRatioEstimate: number
   score: number
+  insights: TabInsight[]
 }
 
 export interface StereoIssue {
@@ -132,6 +134,7 @@ export interface StereoFieldAnalysis {
   haasEffectDetected: boolean
   combFilteringDetected: boolean
   score: number
+  insights: TabInsight[]
 }
 
 export interface ClubMetric {
@@ -165,6 +168,9 @@ export interface ClubReadinessAnalysis {
   energyFlow: EnergyDataPoint[]
   energySections: EnergySection[]
   metrics: ClubMetric[]
+  arrangement: ArrangementAnalysis
+  djPlayability: DJPlayability
+  insights: TabInsight[]
 }
 
 export interface PlatformLufs {
@@ -204,6 +210,7 @@ export interface MasterAnalysis {
   harmonicDistortion: HarmonicDistortion[]
   noiseFloor: number
   score: number
+  insights: TabInsight[]
 }
 
 export interface FixCard {
@@ -211,10 +218,20 @@ export interface FixCard {
   category: string
   title: string
   problem: string
+  whyItMatters: string
+  genreContext: string
   fix: string[]
   pluginSuggestions: string[]
   settings: { frequency?: number; gain?: number; q?: number; param?: string; value?: string }[]
   estimatedImprovement: string
+  dawWalkthrough: { daw: string; steps: string[] }[]
+  interactionWarnings: string[]
+  troubleshooting: string[]
+  timeEstimate: string
+  difficultyLevel: 'beginner' | 'intermediate' | 'advanced'
+  affectedElements: string[]
+  referenceComparison: string
+  alternativeApproaches: { title: string; description: string }[]
 }
 
 export interface AIFixesAnalysis {
@@ -222,11 +239,64 @@ export interface AIFixesAnalysis {
   beforeAfterSpectrum: { frequency: number; before: number; after: number }[]
 }
 
+export interface TabInsight {
+  title: string
+  explanation: string
+  recommendation: string
+  genreNote: string
+}
+
+export interface GenreBenchmark {
+  category: string
+  userValue: number
+  genreAverage: number
+  genreTop10: number
+  percentile: number
+}
+
+export interface ArrangementSection {
+  label: string
+  startTime: number
+  endTime: number
+  energyLevel: number
+  verdict: 'strong' | 'needs-work' | 'weak'
+  feedback: string
+  recommendations: string[]
+  transitionQuality: number
+  transitionFeedback: string
+}
+
+export interface ArrangementAnalysis {
+  sections: ArrangementSection[]
+  overallStructureScore: number
+  structureVerdict: string
+  genreStructureComparison: string
+  sectionLengthAnalysis: { section: string; bars: number; ideal: string; verdict: string }[]
+  insights: TabInsight[]
+}
+
+export interface DJPlayability {
+  overallScore: number
+  mixInScore: number
+  mixOutScore: number
+  introLength: { bars: number; seconds: number; verdict: string; recommendation: string }
+  outroLength: { bars: number; seconds: number; verdict: string; recommendation: string }
+  bpmStability: { isStable: boolean; variance: number; verdict: string }
+  keyCompatibility: { key: string; camelot: string; compatibleKeys: string[]; energyBoostKeys: string[] }
+  beatgridFriendly: boolean
+  firstBeatClarity: { score: number; verdict: string }
+  loopPoints: { time: number; bars: number; quality: string }[]
+  mixabilityIssues: { issue: string; severity: SeverityLevel; fix: string }[]
+  insights: TabInsight[]
+}
+
 export interface PriorityIssue {
   severity: SeverityLevel
   title: string
   description: string
   tab: string
+  quickFix: string
+  affectedElements: string[]
 }
 
 export interface ReportData {
@@ -241,6 +311,8 @@ export interface ReportData {
   mixdownScore: number
   clubScore: number
   masterScore: number
+  executiveSummary: string
+  genreBenchmarks: GenreBenchmark[]
   categoryScores: { category: string; score: number; verdict: string }[]
   priorityIssues: PriorityIssue[]
   frequency: FrequencyAnalysis
