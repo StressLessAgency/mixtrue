@@ -23,9 +23,17 @@ function EnergyFlowChartInner({ data, sections, className }: EnergyFlowChartProp
         <AreaChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="energyGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FF2D78" stopOpacity={0.4} />
-              <stop offset="100%" stopColor="#FF2D78" stopOpacity={0.02} />
+              <stop offset="0%" stopColor="#FF2D78" stopOpacity={0.5} />
+              <stop offset="40%" stopColor="#7C3AED" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="#FF2D78" stopOpacity={0.01} />
             </linearGradient>
+            <filter id="energyGlow">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
           <XAxis
             dataKey="time"
@@ -57,7 +65,8 @@ function EnergyFlowChartInner({ data, sections, className }: EnergyFlowChartProp
             fill="url(#energyGrad)"
             strokeWidth={2}
             isAnimationActive={true}
-            animationDuration={800}
+            animationDuration={1000}
+            filter="url(#energyGlow)"
           />
         </AreaChart>
       </ResponsiveContainer>

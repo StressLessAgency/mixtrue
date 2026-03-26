@@ -45,7 +45,7 @@ export function TabsList({ children, className }: TabsListProps) {
   return (
     <div
       className={cn(
-        'flex gap-1 border-b border-border-subtle overflow-x-auto',
+        'flex gap-0.5 daw-panel p-1 overflow-x-auto rounded-lg',
         className
       )}
       role="tablist"
@@ -73,18 +73,15 @@ export function TabsTrigger({ value, children, className, disabled }: TabsTrigge
       disabled={disabled}
       onClick={() => !disabled && setActiveTab(value)}
       className={cn(
-        'px-4 py-2.5 text-sm font-body whitespace-nowrap transition-all duration-200 relative cursor-pointer',
+        'px-3 py-2 text-xs font-mono whitespace-nowrap transition-all duration-200 relative cursor-pointer rounded-md uppercase tracking-wider',
         isActive
-          ? 'text-accent-cyan'
-          : 'text-text-secondary hover:text-text-primary',
+          ? 'text-accent-cyan bg-accent-cyan/8 shadow-[0_0_12px_rgba(0,229,255,0.1)]'
+          : 'text-text-muted hover:text-text-secondary hover:bg-white/[0.02]',
         disabled && 'opacity-40 cursor-not-allowed',
         className
       )}
     >
       {children}
-      {isActive && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-cyan rounded-full" />
-      )}
     </button>
   )
 }

@@ -106,46 +106,58 @@ export default function Report() {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          <OverallScoreGauge score={report.overallScore} size={160} strokeWidth={10} label="Overall Score" />
-
-          <div className="flex-1">
-            <h1 className="font-display font-bold text-2xl text-text-primary mb-2">{report.trackName}</h1>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Badge variant="cyan">{report.fileFormat}</Badge>
-              <Badge variant="purple" className="capitalize">{report.genreMode}</Badge>
-              <Badge variant="default" className="capitalize">{report.analysisMode}</Badge>
-              <Badge variant="default">{report.fileSizeMb} MB</Badge>
-            </div>
-
-            <div className="flex gap-6 mb-4">
-              <div className="text-center">
-                <OverallScoreGauge score={report.mixdownScore} size={70} strokeWidth={5} />
-                <p className="text-xs text-text-muted mt-1">Mixdown</p>
-              </div>
-              <div className="text-center">
-                <OverallScoreGauge score={report.clubScore} size={70} strokeWidth={5} />
-                <p className="text-xs text-text-muted mt-1">Club</p>
-              </div>
-              <div className="text-center">
-                <OverallScoreGauge score={report.masterScore} size={70} strokeWidth={5} />
-                <p className="text-xs text-text-muted mt-1">Master</p>
+      <div className="space-y-6">
+        {/* Header - DAW style */}
+        <div className="daw-panel p-5">
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+            {/* Score gauges row */}
+            <div className="flex items-center gap-5">
+              <OverallScoreGauge score={report.overallScore} size={130} strokeWidth={8} label="Overall" />
+              <div className="flex flex-col gap-3">
+                <OverallScoreGauge score={report.mixdownScore} size={64} strokeWidth={4} label="Mix" />
+                <OverallScoreGauge score={report.clubScore} size={64} strokeWidth={4} label="Club" />
+                <OverallScoreGauge score={report.masterScore} size={64} strokeWidth={4} label="Master" />
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button variant="primary" size="sm" onClick={handleExportPdf}>
-                <Download className="w-3 h-3" />
-                Export PDF Report
-              </Button>
-              <Link to="/app/history">
-                <Button variant="outline" size="sm">
-                  <GitCompare className="w-3 h-3" />
-                  Compare Versions
+            {/* Track info + actions */}
+            <div className="flex-1 min-w-0">
+              <h1 className="font-display font-bold text-xl text-text-primary mb-2 truncate">{report.trackName}</h1>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                <Badge variant="cyan">{report.fileFormat}</Badge>
+                <Badge variant="purple" className="capitalize">{report.genreMode}</Badge>
+                <Badge variant="default" className="capitalize">{report.analysisMode}</Badge>
+                <Badge variant="default">{report.fileSizeMb} MB</Badge>
+              </div>
+
+              {/* Inline metrics bar */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="daw-panel px-3 py-2">
+                  <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">LUFS</span>
+                  <p className="text-sm font-mono text-accent-cyan">{report.master.integratedLufs.toFixed(1)}</p>
+                </div>
+                <div className="daw-panel px-3 py-2">
+                  <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">True Peak</span>
+                  <p className="text-sm font-mono text-accent-amber">{report.master.truePeak.toFixed(1)} dBTP</p>
+                </div>
+                <div className="daw-panel px-3 py-2">
+                  <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">DR</span>
+                  <p className="text-sm font-mono text-accent-green">{report.dynamics.metrics.drScore.toFixed(1)}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="primary" size="sm" onClick={handleExportPdf}>
+                  <Download className="w-3 h-3" />
+                  Export PDF
                 </Button>
-              </Link>
+                <Link to="/app/history">
+                  <Button variant="outline" size="sm">
+                    <GitCompare className="w-3 h-3" />
+                    Compare
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
