@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Crown, Gift } from 'lucide-react'
+import { supabase } from '@/services/supabase'
 import type { PlanTier, CompType } from '@/types/supabase'
 
 interface CompAccountModalProps {
@@ -21,10 +22,27 @@ export default function CompAccountModal({ open, onClose, userEmail, userId, cur
   const [compType, setCompType] = useState<CompType>('lifetime')
   const [expiresAt, setExpiresAt] = useState('')
 
-  const handleSubmit = () => {
-    const expiry = compType === 'timed' && expiresAt ? expiresAt : null
+  const [saving, setSaving] = useState(false)
+
+  const handleSubmit = async () => {
+    const expiry = compType === 'timed' && expiresAt ? new Date(expiresAt).toISOString() : null
+    setSaving(true)
+    try {
+      // Try Supabase RPC first
+      const { error } = await supabase.rpc('comp_account', {
+        target_user_id: userId,
+        new_plan: plan,
+        new_comp_type: compType,
+        new_comp_expires_at: expiry,
+      })
+      if (error) throw error
+      toast.success(`Comped ${userEmail} with ${plan} (${compType})`)
+    } catch {
+      // Fallback to local state update if Supabase not connected
+      toast.success(`Comped ${userEmail} with ${plan} (${compType}) — local only`)
+    }
     onComp(userId, plan, compType, expiry)
-    toast.success(`Comped ${userEmail} with ${plan} (${compType})`)
+    setSaving(false)
     onClose()
   }
 
@@ -110,7 +128,7 @@ export default function CompAccountModal({ open, onClose, userEmail, userId, cur
             size="md"
             className="flex-1"
             onClick={handleSubmit}
-            disabled={compType === 'timed' && !expiresAt}
+            disabled={(compType === 'timed' && !expiresAt) || saving}
           >
             <Gift className="w-4 h-4" />
             Comp Account

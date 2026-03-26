@@ -1,4 +1,4 @@
--- mixtrue AI — Supabase Database Schema
+-- mixtrue — Supabase Database Schema
 -- Run this in Supabase SQL Editor
 
 -- Users / Profiles
@@ -7,7 +7,10 @@ CREATE TABLE profiles (
   email TEXT,
   full_name TEXT,
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
-  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro')),
+  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'legendary')),
+  comp_type TEXT DEFAULT 'none' CHECK (comp_type IN ('none', 'lifetime', 'timed')),
+  comp_expires_at TIMESTAMPTZ,
+  comp_granted_by UUID REFERENCES auth.users,
   stripe_customer_id TEXT,
   analyses_this_month INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -56,7 +59,7 @@ CREATE TABLE stripe_events (
   processed_at TIMESTAMPTZ DEFAULT now()
 );
 
--- RLS Policies
+-- ========== RLS Policies ==========
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analysis_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
@@ -87,6 +90,12 @@ CREATE POLICY "Admins can view all profiles"
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
+CREATE POLICY "Admins can update all profiles"
+  ON profiles FOR UPDATE
+  USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
 CREATE POLICY "Admins can view all sessions"
   ON analysis_sessions FOR SELECT
   USING (
@@ -99,7 +108,7 @@ CREATE POLICY "Admins can manage settings"
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
--- Create profile on signup
+-- ========== Auto-create profile on signup ==========
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -112,3 +121,78 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ========== Admin: Comp Account RPC ==========
+-- Call from frontend: supabase.rpc('comp_account', { ... })
+CREATE OR REPLACE FUNCTION comp_account(
+  target_user_id UUID,
+  new_plan TEXT,
+  new_comp_type TEXT,
+  new_comp_expires_at TIMESTAMPTZ DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+  -- Verify caller is admin
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin') THEN
+    RAISE EXCEPTION 'Only admins can comp accounts';
+  END IF;
+
+  -- Validate plan
+  IF new_plan NOT IN ('free', 'pro', 'legendary') THEN
+    RAISE EXCEPTION 'Invalid plan: %', new_plan;
+  END IF;
+
+  -- Validate comp type
+  IF new_comp_type NOT IN ('none', 'lifetime', 'timed') THEN
+    RAISE EXCEPTION 'Invalid comp type: %', new_comp_type;
+  END IF;
+
+  -- Timed comps require an expiry date
+  IF new_comp_type = 'timed' AND new_comp_expires_at IS NULL THEN
+    RAISE EXCEPTION 'Timed comps require an expiry date';
+  END IF;
+
+  UPDATE profiles
+  SET
+    plan = new_plan,
+    comp_type = new_comp_type,
+    comp_expires_at = new_comp_expires_at,
+    comp_granted_by = auth.uid()
+  WHERE id = target_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ========== Cron: Expire timed comps ==========
+-- Runs daily, downgrades expired timed comps back to free
+-- Requires pg_cron extension (enable in Supabase Dashboard > Database > Extensions)
+CREATE OR REPLACE FUNCTION expire_timed_comps()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE profiles
+  SET
+    plan = 'free',
+    comp_type = 'none',
+    comp_expires_at = NULL,
+    comp_granted_by = NULL
+  WHERE
+    comp_type = 'timed'
+    AND comp_expires_at IS NOT NULL
+    AND comp_expires_at < now();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Schedule it to run daily at midnight UTC
+-- Run this AFTER enabling pg_cron extension:
+-- SELECT cron.schedule('expire-timed-comps', '0 0 * * *', 'SELECT expire_timed_comps()');
+
+-- ========== Cron: Reset monthly analysis counts ==========
+-- Runs on the 1st of each month at midnight UTC
+CREATE OR REPLACE FUNCTION reset_monthly_analyses()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE profiles SET analyses_this_month = 0;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Run this AFTER enabling pg_cron extension:
+-- SELECT cron.schedule('reset-monthly-analyses', '0 0 1 * *', 'SELECT reset_monthly_analyses()');

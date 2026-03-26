@@ -1,6 +1,16 @@
 export type GenreMode =
-  | 'techno' | 'house' | 'drum-and-bass' | 'hip-hop' | 'trap'
-  | 'pop' | 'rnb' | 'rock' | 'ambient' | 'custom'
+  // Techno subgenres
+  | 'techno' | 'hard-techno' | 'minimal-techno' | 'melodic-techno' | 'acid-techno' | 'industrial-techno' | 'dub-techno'
+  // House subgenres
+  | 'house' | 'deep-house' | 'tech-house' | 'progressive-house' | 'afro-house' | 'bass-house' | 'electro-house'
+  // Bass music
+  | 'drum-and-bass' | 'liquid-dnb' | 'neurofunk' | 'jungle' | 'dubstep' | 'riddim' | 'garage' | 'uk-bass'
+  // Hip-Hop subgenres
+  | 'hip-hop' | 'boom-bap' | 'trap' | 'drill' | 'lo-fi-hiphop' | 'phonk' | 'cloud-rap' | 'conscious-hiphop'
+  // Other electronic
+  | 'trance' | 'psytrance' | 'hardstyle' | 'breakbeat' | 'downtempo' | 'ambient' | 'synthwave' | 'jersey-club'
+  // Non-electronic
+  | 'pop' | 'rnb' | 'rock' | 'custom'
 
 export type AnalysisMode = 'mixdown' | 'master' | 'both'
 

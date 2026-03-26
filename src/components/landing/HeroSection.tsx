@@ -6,12 +6,15 @@ import AnimatedWaveform from './AnimatedWaveform'
 
 const genreBadges = [
   { label: 'Techno', color: '#00E5FF' },
-  { label: 'House', color: '#7C3AED' },
+  { label: 'Melodic Techno', color: '#00E5FF' },
+  { label: 'Tech House', color: '#7C3AED' },
+  { label: 'Deep House', color: '#7C3AED' },
   { label: 'Drum & Bass', color: '#00FF9D' },
+  { label: 'Dubstep', color: '#FF2D78' },
   { label: 'Hip-Hop', color: '#FFB800' },
-  { label: 'Pop', color: '#FF2D78' },
-  { label: 'Rock', color: '#FF3B5C' },
-  { label: 'Ambient', color: '#00E5FF' },
+  { label: 'Trap', color: '#FF3B5C' },
+  { label: 'Drill', color: '#FFB800' },
+  { label: 'Phonk', color: '#FF3B5C' },
 ]
 
 const containerVariants = {
