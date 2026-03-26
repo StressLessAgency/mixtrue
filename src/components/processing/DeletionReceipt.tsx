@@ -15,7 +15,7 @@ File: ${receipt.fileName}
 Deleted: ${receipt.deletedAt}
 Session ID: ${receipt.sessionId}
 Storage: ${receipt.storage}
-AI Training: ${receipt.aiTraining}
+Data Usage: ${receipt.aiTraining}
 Receipt ID: ${receipt.receiptId}
 `.trim()
 
@@ -59,7 +59,7 @@ Receipt ID: ${receipt.receiptId}
           <span className="text-accent-green">{receipt.storage}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-text-muted">AI Training:</span>
+          <span className="text-text-muted">Data Usage:</span>
           <span className="text-accent-green">{receipt.aiTraining}</span>
         </div>
         <div className="flex justify-between">

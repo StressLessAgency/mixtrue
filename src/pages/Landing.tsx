@@ -32,7 +32,7 @@ const comparisonItems = [
   { feature: 'Full spectrum analysis (20Hz–20kHz)', mixtrue: true, others: 'partial' },
   { feature: 'Genre-calibrated benchmarks', mixtrue: true, others: false },
   { feature: 'Club readiness simulation', mixtrue: true, others: false },
-  { feature: 'AI-powered fix recommendations', mixtrue: true, others: false },
+  { feature: 'Intelligent fix recommendations', mixtrue: true, others: false },
   { feature: 'Codec resilience testing', mixtrue: true, others: 'partial' },
   { feature: 'Zero file retention', mixtrue: true, others: false },
   { feature: 'Stereo phase analysis', mixtrue: true, others: true },
@@ -50,7 +50,7 @@ export default function Landing() {
               <Activity className="w-4 h-4 text-accent-cyan" />
             </div>
             <span className="font-display font-bold text-lg text-text-primary">
-              mixtrue<span className="text-accent-cyan text-glow-cyan ml-0.5">AI</span>
+              mixtrue
             </span>
           </Link>
           <div className="flex items-center gap-5">
@@ -345,11 +345,11 @@ export default function Landing() {
                     <Activity className="w-4 h-4 text-accent-cyan" />
                   </div>
                   <span className="font-display font-bold text-sm text-text-primary">
-                    mixtrue<span className="text-accent-cyan ml-0.5">AI</span>
+                    mixtrue
                   </span>
                 </div>
                 <p className="text-xs text-text-muted max-w-xs">
-                  AI-powered audio mix and master analysis for producers, engineers, and labels.
+                  Professional audio mix and master analysis for producers, engineers, and labels.
                 </p>
               </div>
               <div className="flex gap-12">
@@ -374,7 +374,7 @@ export default function Landing() {
                 Privacy by design — your audio is never stored or used for training.
               </p>
               <p className="text-[10px] text-text-muted font-mono">
-                &copy; {new Date().getFullYear()} mixtrue AI. All rights reserved.
+                &copy; {new Date().getFullYear()} mixtrue. All rights reserved.
               </p>
             </div>
           </div>

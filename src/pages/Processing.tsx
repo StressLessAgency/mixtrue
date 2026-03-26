@@ -22,7 +22,7 @@ const mockOperations = [
   'Analyzing stereo correlation and phase...',
   'Simulating club playback at 106dB SPL...',
   'Measuring true peak and codec resilience...',
-  'Generating AI fix recommendations...',
+  'Generating fix recommendations...',
   'Wiping temporary storage securely...',
 ]
 
@@ -62,8 +62,8 @@ export default function Processing() {
 
     const stageLabels: Record<string, number> = {
       'Converting audio for analysis...': 0,
-      'Sending audio to Gemini AI for analysis...': 2,
-      'Processing AI analysis results...': 6,
+      'Sending audio for deep analysis...': 2,
+      'Processing analysis results...': 6,
     }
 
     analyzeWithGemini({
@@ -95,7 +95,7 @@ export default function Processing() {
         setIsComplete(true)
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Gemini analysis failed')
+        setError(err instanceof Error ? err.message : 'Analysis failed')
       })
   }, [file, genre, analysisMode, reportId, setReport, totalStages])
 
@@ -156,14 +156,14 @@ export default function Processing() {
     <PageTransition>
       <div className="max-w-2xl mx-auto">
         <h1 className="font-display font-bold text-2xl text-text-primary mb-2">
-          {USE_GEMINI ? 'AI Analyzing Your Track' : 'Processing Your Track'}
+          Analyzing Your Track
         </h1>
 
         <div className="flex items-center gap-3 mb-8">
           <span className="text-sm text-text-secondary font-body">{file?.name ?? 'Midnight Protocol (Final Mix).wav'}</span>
           <Badge variant="cyan">{genre ?? 'techno'}</Badge>
           <Badge variant="purple">{analysisMode ?? 'both'}</Badge>
-          {USE_GEMINI && <Badge variant="default">Gemini AI</Badge>}
+          {USE_GEMINI && <Badge variant="default">Deep Analysis</Badge>}
         </div>
 
         {error ? (

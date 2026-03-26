@@ -70,7 +70,7 @@ export default function HeroSection() {
         <motion.div variants={itemVariants} className="mb-6">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono border border-accent-cyan/20 bg-accent-cyan/5 text-accent-cyan">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan shadow-[0_0_6px_rgba(0,229,255,0.6)]" />
-            Powered by Gemini AI
+            Professional Audio Intelligence
           </span>
         </motion.div>
 

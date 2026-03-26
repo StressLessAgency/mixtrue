@@ -24,7 +24,10 @@ export default function PriorityFixList({ issues, onNavigateTab }: PriorityFixLi
           const config = severityConfig[issue.severity]
           const Icon = config.icon
           return (
-            <div key={i} className="glass-card p-4 flex items-start gap-4">
+            <div key={i} className={`glass-card p-4 flex items-start gap-4 ${
+              issue.severity === 'critical' ? 'severity-border-critical' :
+              issue.severity === 'warning' ? 'severity-border-warning' : 'severity-border-advisory'
+            }`}>
               <div className="flex-shrink-0 mt-0.5">
                 <Icon className={`w-4 h-4 ${
                   issue.severity === 'critical' ? 'text-accent-red' :

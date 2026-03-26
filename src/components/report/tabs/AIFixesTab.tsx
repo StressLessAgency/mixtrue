@@ -23,7 +23,7 @@ function AIFixesTabInner({ data, onExportPdf }: AIFixesTabProps) {
       <div>
         <h3 className="font-display font-bold text-xl text-text-primary mb-2">Your Personalized Fix Plan</h3>
         <p className="text-sm text-text-secondary mb-6">
-          AI-generated action plan based on your analysis results. Follow these fixes in priority order.
+          Personalized action plan based on your analysis results. Follow these fixes in priority order.
         </p>
       </div>
 

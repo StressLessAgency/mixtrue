@@ -92,8 +92,8 @@ export default function FileDropZone({ file, onFileSelect }: FileDropZoneProps) 
         className={cn(
           'border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all',
           isDragOver
-            ? 'border-accent-cyan bg-accent-cyan/5 glow-cyan'
-            : 'border-border-accent dropzone-pulse hover:bg-white/[0.02]'
+            ? 'border-accent-cyan bg-accent-cyan/5 shadow-[0_0_40px_rgba(0,229,255,0.12)] scale-[1.01]'
+            : 'border-border-accent dropzone-pulse hover:bg-white/[0.02] hover:border-accent-cyan/30'
         )}
         role="button"
         aria-label="Upload audio file"

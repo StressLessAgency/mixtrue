@@ -8,7 +8,7 @@ interface CategoryScoreCardProps {
 
 export default function CategoryScoreCard({ category, score, verdict }: CategoryScoreCardProps) {
   return (
-    <div className="glass-card glass-card-hover p-4 flex flex-col items-center text-center gap-3">
+    <div className="glass-card gradient-border hover-reveal p-4 flex flex-col items-center text-center gap-3 cursor-default">
       <OverallScoreGauge score={score} size={90} strokeWidth={6} />
       <div>
         <h4 className="font-display font-semibold text-sm text-text-primary">{category}</h4>

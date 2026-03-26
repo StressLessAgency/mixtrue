@@ -56,7 +56,7 @@ export default function FeaturesSection() {
             Six dimensions of audio intelligence
           </h2>
           <p className="text-text-secondary max-w-2xl mx-auto">
-            Every track is analyzed across frequency, dynamics, stereo, club readiness, mastering, and privacy — powered by Gemini AI.
+            Every track is analyzed across frequency, dynamics, stereo, club readiness, mastering, and privacy — with studio-grade precision.
           </p>
         </motion.div>
 

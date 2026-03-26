@@ -5,7 +5,7 @@ const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('glass-card p-6', className)}
+      className={cn('glass-card gradient-border p-6', className)}
       {...props}
     />
   )

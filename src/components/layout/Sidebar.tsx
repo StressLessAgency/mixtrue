@@ -28,7 +28,6 @@ export default function Sidebar() {
             <span className="font-display font-bold text-lg text-text-primary tracking-tight">
               mixtrue
             </span>
-            <span className="text-accent-cyan font-display font-bold text-lg text-glow-cyan ml-0.5">AI</span>
           </div>
         </Link>
       </div>

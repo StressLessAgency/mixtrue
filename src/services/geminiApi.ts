@@ -225,7 +225,7 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
   const mimeType = getMimeType(file)
   const fileSizeMb = Math.round((file.size / (1024 * 1024)) * 10) / 10
 
-  onStageUpdate?.('Sending audio to Gemini AI for analysis...')
+  onStageUpdate?.('Sending audio for deep analysis...')
 
   const prompt = buildAnalysisPrompt(genre, mode, file.name, fileSizeMb)
 
@@ -234,7 +234,7 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
     { text: prompt },
   ])
 
-  onStageUpdate?.('Processing AI analysis results...')
+  onStageUpdate?.('Processing analysis results...')
 
   const responseText = result.response.text()
 
@@ -248,7 +248,7 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
   try {
     parsed = JSON.parse(jsonStr)
   } catch {
-    throw new Error('Failed to parse Gemini response as JSON. The AI returned an invalid format.')
+    throw new Error('Failed to parse analysis response. Please try again.')
   }
 
   // Attach session metadata
