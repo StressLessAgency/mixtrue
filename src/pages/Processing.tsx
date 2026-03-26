@@ -26,7 +26,7 @@ const mockOperations = [
   'Wiping temporary storage securely...',
 ]
 
-const MAX_PROCESSING_TIME_MS = 120_000
+const MAX_PROCESSING_TIME_MS = 90_000
 
 export default function Processing() {
   const navigate = useNavigate()
@@ -39,32 +39,24 @@ export default function Processing() {
   const [error, setError] = useState<string | null>(null)
   const [currentOperation, setCurrentOperation] = useState(mockOperations[0])
   const geminiStarted = useRef(false)
+  const geminiDone = useRef(false)
 
   const totalStages = stages.length
   const progress = Math.min(100, (currentStage / totalStages) * 100)
-
   const reportId = sessionId ?? 'demo'
 
   // Safety timeout
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (!isComplete && !error) {
-        setIsTimedOut(true)
-      }
+      if (!isComplete && !error) setIsTimedOut(true)
     }, MAX_PROCESSING_TIME_MS)
     return () => clearTimeout(timeout)
   }, [isComplete, error])
 
-  // Audio analysis
+  // Gemini analysis
   useEffect(() => {
     if (!USE_GEMINI || !file || !genre || !analysisMode || geminiStarted.current) return
     geminiStarted.current = true
-
-    const stageLabels: Record<string, number> = {
-      'Converting audio for analysis...': 0,
-      'Sending audio for deep analysis...': 2,
-      'Processing analysis results...': 6,
-    }
 
     analyzeWithGemini({
       file,
@@ -72,42 +64,42 @@ export default function Processing() {
       mode: analysisMode,
       onStageUpdate: (stage) => {
         setCurrentOperation(stage)
-        const targetStage = stageLabels[stage]
-        if (targetStage !== undefined) {
-          // Advance stages up to the target
-          setStages((prev) =>
-            prev.map((s, i) =>
-              i < targetStage ? { ...s, status: 'completed' as const } :
-              i === targetStage ? { ...s, status: 'active' as const } : s
-            )
-          )
-          setCurrentStage(targetStage)
-        }
       },
     })
       .then((report) => {
+        if (geminiDone.current) return
+        geminiDone.current = true
         report.sessionId = reportId
         setReport(report)
-        // Complete all stages
         setStages((prev) => prev.map((s) => ({ ...s, status: 'completed' as const })))
         setCurrentStage(totalStages)
         setCurrentOperation('Analysis complete!')
         setIsComplete(true)
       })
       .catch((err) => {
+        if (geminiDone.current) return
+        geminiDone.current = true
         setError(err instanceof Error ? err.message : 'Analysis failed')
       })
   }, [file, genre, analysisMode, reportId, setReport, totalStages])
 
-  // Mock stage progression (only when not using Gemini)
+  // Animated stage progression - runs for BOTH Gemini and mock mode
+  // For Gemini: provides visual progress while waiting for the API
+  // For mock: is the actual simulation
   useEffect(() => {
-    if (USE_GEMINI || isTimedOut || error) return
+    if (isTimedOut || error || isComplete) return
+    if (geminiDone.current) return
     if (currentStage >= totalStages) {
-      setIsComplete(true)
+      if (!USE_GEMINI) setIsComplete(true)
       return
     }
 
+    const delay = USE_GEMINI
+      ? 2500 + Math.random() * 2000  // Slower pacing for Gemini (it takes longer)
+      : 1200 + Math.random() * 800   // Faster for mock
+
     const timer = setTimeout(() => {
+      if (geminiDone.current) return
       setStages((prev) =>
         prev.map((s, i) =>
           i === currentStage ? { ...s, status: 'completed' as const } :
@@ -115,13 +107,15 @@ export default function Processing() {
         )
       )
       setCurrentStage((prev) => prev + 1)
-      setCurrentOperation(mockOperations[Math.min(currentStage + 1, mockOperations.length - 1)])
-    }, 1200 + Math.random() * 800)
+      if (!USE_GEMINI) {
+        setCurrentOperation(mockOperations[Math.min(currentStage + 1, mockOperations.length - 1)])
+      }
+    }, delay)
 
     return () => clearTimeout(timer)
-  }, [currentStage, totalStages, isTimedOut, error])
+  }, [currentStage, totalStages, isTimedOut, error, isComplete])
 
-  // Auto-redirect countdown after completion
+  // Auto-redirect after completion
   useEffect(() => {
     if (!isComplete) return
     const timer = setInterval(() => {
@@ -146,6 +140,7 @@ export default function Processing() {
     setCurrentOperation(mockOperations[0])
     setStages(mockStatusStages.stages)
     geminiStarted.current = false
+    geminiDone.current = false
   }, [])
 
   const handleSkipToReport = useCallback(() => {
@@ -159,11 +154,10 @@ export default function Processing() {
           Analyzing Your Track
         </h1>
 
-        <div className="flex items-center gap-3 mb-8">
-          <span className="text-sm text-text-secondary font-body">{file?.name ?? 'Midnight Protocol (Final Mix).wav'}</span>
+        <div className="flex flex-wrap items-center gap-2 mb-8">
+          <span className="text-sm text-text-secondary font-body truncate max-w-[200px]">{file?.name ?? 'Demo Track'}</span>
           <Badge variant="cyan">{genre ?? 'techno'}</Badge>
           <Badge variant="purple">{analysisMode ?? 'both'}</Badge>
-          {USE_GEMINI && <Badge variant="default">Deep Analysis</Badge>}
         </div>
 
         {error ? (
@@ -174,25 +168,23 @@ export default function Processing() {
               <Button variant="outline" size="md" onClick={handleRetry}>
                 Retry
               </Button>
-              {!USE_GEMINI && (
-                <Button variant="primary" size="md" onClick={handleSkipToReport}>
-                  View Report
-                </Button>
-              )}
+              <Button variant="primary" size="md" onClick={handleSkipToReport}>
+                View Demo Report
+              </Button>
             </div>
           </div>
         ) : isTimedOut ? (
           <div className="glass-card p-8 text-center space-y-4">
             <p className="text-accent-red font-display font-semibold">Processing Timed Out</p>
             <p className="text-sm text-text-secondary">
-              The analysis is taking longer than expected. You can retry or skip to the report.
+              The analysis is taking longer than expected.
             </p>
             <div className="flex justify-center gap-3">
               <Button variant="outline" size="md" onClick={handleRetry}>
                 Retry
               </Button>
               <Button variant="primary" size="md" onClick={handleSkipToReport}>
-                View Report
+                View Demo Report
               </Button>
             </div>
           </div>
@@ -206,6 +198,15 @@ export default function Processing() {
                 {currentOperation}
               </p>
             </div>
+
+            {/* Skip button always visible after 10 seconds */}
+            {!isComplete && currentStage > 2 && (
+              <div className="mt-6 text-center">
+                <Button variant="muted" size="sm" onClick={handleSkipToReport}>
+                  Skip to demo report
+                </Button>
+              </div>
+            )}
 
             {isComplete && (
               <motion.div
