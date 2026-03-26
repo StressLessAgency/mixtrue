@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Download, GitCompare } from 'lucide-react'
+import { Download, GitCompare, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PageTransition from '@/components/layout/PageTransition'
 import OverallScoreGauge from '@/components/report/OverallScoreGauge'
@@ -29,14 +29,36 @@ export default function Report() {
   const [_activeTab, setActiveTab] = useState('overview')
   const gate = useFeatureGate()
 
-  useEffect(() => {
+  const fetchReport = useCallback((signal?: AbortSignal) => {
     if (!sessionId) return
     setLoading(true)
-    analysisApi.getReport(sessionId)
+    setError(null)
+
+    const reportPromise = analysisApi.getReport(sessionId)
+
+    // If an abort signal is provided, race against it
+    const abortPromise = signal
+      ? new Promise<never>((_, reject) => {
+          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        })
+      : null
+
+    const request = abortPromise ? Promise.race([reportPromise, abortPromise]) : reportPromise
+
+    request
       .then(setReport)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load report'))
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError(err instanceof Error ? err.message : 'Failed to load report')
+      })
       .finally(() => setLoading(false))
   }, [sessionId])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchReport(controller.signal)
+    return () => controller.abort()
+  }, [fetchReport])
 
   if (loading) {
     return (
@@ -59,9 +81,13 @@ export default function Report() {
   if (error || !report) {
     return (
       <PageTransition>
-        <div className="glass-card p-8 text-center">
+        <div className="glass-card p-8 text-center space-y-4">
           <p className="text-accent-red font-display font-semibold mb-2">Error Loading Report</p>
           <p className="text-sm text-text-secondary">{error ?? 'Report not found'}</p>
+          <Button variant="outline" size="sm" onClick={() => fetchReport()}>
+            <RefreshCw className="w-3 h-3" />
+            Retry
+          </Button>
         </div>
       </PageTransition>
     )

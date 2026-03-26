@@ -38,7 +38,7 @@ export default function Upload() {
     setAnalysisMode(mode)
     setFile(file)
     setReferenceFile(refFile)
-    setSessionId('a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+    setSessionId(crypto.randomUUID())
     navigate('/app/processing')
   }
 

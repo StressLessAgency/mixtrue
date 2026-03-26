@@ -9,9 +9,25 @@ import { mockReport, mockStatusStages, mockDeletionReceipt } from './mockData'
 
 const API_BASE = import.meta.env.VITE_ANALYSIS_API_URL || 'https://api.mixtrue-ai.com/v1'
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true'
+const REQUEST_TIMEOUT_MS = 30_000
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit & { timeout?: number }): Promise<Response> {
+  const { timeout = REQUEST_TIMEOUT_MS, ...fetchInit } = init ?? {}
+  const controller = new AbortController()
+  if (fetchInit.signal) {
+    fetchInit.signal.addEventListener('abort', () => controller.abort())
+  }
+  const id = setTimeout(() => controller.abort(), timeout)
+  return fetch(input, { ...fetchInit, signal: controller.signal })
+    .catch((err) => {
+      if (err.name === 'AbortError') throw new Error('Request timed out')
+      throw err
+    })
+    .finally(() => clearTimeout(id))
 }
 
 export const analysisApi = {
@@ -32,9 +48,10 @@ export const analysisApi = {
       formData.append('reference_file', _payload.referenceFile)
     }
 
-    const res = await fetch(`${API_BASE}/analyze`, {
+    const res = await fetchWithTimeout(`${API_BASE}/analyze`, {
       method: 'POST',
       body: formData,
+      timeout: 60_000,
     })
 
     if (!res.ok) throw new Error(`Analysis API error: ${res.status}`)
@@ -47,7 +64,7 @@ export const analysisApi = {
       return { ...mockStatusStages }
     }
 
-    const res = await fetch(`${API_BASE}/status/${sessionId}`)
+    const res = await fetchWithTimeout(`${API_BASE}/status/${sessionId}`)
     if (!res.ok) throw new Error(`Status API error: ${res.status}`)
     return res.json() as Promise<StatusResponse>
   },
@@ -58,7 +75,7 @@ export const analysisApi = {
       return { ...mockReport, sessionId }
     }
 
-    const res = await fetch(`${API_BASE}/report/${sessionId}`)
+    const res = await fetchWithTimeout(`${API_BASE}/report/${sessionId}`)
     if (!res.ok) throw new Error(`Report API error: ${res.status}`)
     return res.json() as Promise<ReportData>
   },
@@ -69,7 +86,7 @@ export const analysisApi = {
       return { ...mockDeletionReceipt, sessionId }
     }
 
-    const res = await fetch(`${API_BASE}/deletion-receipt/${sessionId}`)
+    const res = await fetchWithTimeout(`${API_BASE}/deletion-receipt/${sessionId}`)
     if (!res.ok) throw new Error(`Deletion API error: ${res.status}`)
     return res.json() as Promise<DeletionReceipt>
   },
