@@ -34,20 +34,26 @@ function fallbackProfile(user: User): Profile {
 
 async function fetchProfile(user: User): Promise<Profile> {
   try {
-    const query = supabase
+    // Use select('*') to avoid column-not-found errors
+    const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, role, plan, comp_type, comp_expires_at, comp_granted_by, stripe_customer_id, analyses_this_month, created_at')
+      .select('*')
       .eq('id', user.id)
       .single()
 
-    const result = await Promise.race([
-      query.then((r) => r),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-    ])
+    // Log for debugging (visible in browser console)
+    if (error) {
+      console.warn('[mixtrue] Profile fetch error:', error.message, error.code)
+      return fallbackProfile(user)
+    }
 
-    if (!result || result.error || !result.data) return fallbackProfile(user)
+    if (!data) {
+      console.warn('[mixtrue] No profile found for user:', user.id)
+      return fallbackProfile(user)
+    }
 
-    const data = result.data
+    console.log('[mixtrue] Profile loaded:', { role: data.role, plan: data.plan, email: data.email })
+
     return {
       id: data.id,
       email: data.email ?? user.email ?? '',
@@ -61,7 +67,8 @@ async function fetchProfile(user: User): Promise<Profile> {
       analyses_this_month: data.analyses_this_month ?? 0,
       created_at: data.created_at ?? user.created_at,
     }
-  } catch {
+  } catch (e) {
+    console.error('[mixtrue] Profile fetch exception:', e)
     return fallbackProfile(user)
   }
 }
@@ -80,10 +87,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        // Set authenticated immediately with fallback, then upgrade with real profile
         const fb = fallbackProfile(session.user)
         set({ user: fb, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
-        // Fetch real profile in background
         const profile = await fetchProfile(session.user)
         set({ user: profile })
       } else {
@@ -118,7 +123,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithEmail: async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    // Auth state change listener handles the rest
   },
 
   signUpWithEmail: async (email: string, password: string, fullName: string) => {
