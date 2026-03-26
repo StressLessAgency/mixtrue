@@ -1,28 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Gift } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import CompAccountModal from './CompAccountModal'
+import { supabase } from '@/services/supabase'
 import type { PlanTier, CompType } from '@/types/supabase'
 
-interface MockUser {
+interface UserRow {
   id: string
   email: string
   plan: PlanTier
   comp_type: CompType
   comp_expires_at: string | null
-  analyses: number
-  joined: string
+  analyses_this_month: number
+  created_at: string
 }
-
-const initialUsers: MockUser[] = [
-  { id: '1', email: 'alex@producer.com', plan: 'pro', comp_type: 'none', comp_expires_at: null, analyses: 24, joined: '2026-01-15' },
-  { id: '2', email: 'maya@beats.io', plan: 'free', comp_type: 'none', comp_expires_at: null, analyses: 3, joined: '2026-02-20' },
-  { id: '3', email: 'jin@studio.net', plan: 'legendary', comp_type: 'lifetime', comp_expires_at: null, analyses: 87, joined: '2025-11-03' },
-  { id: '4', email: 'sam@mix.co', plan: 'free', comp_type: 'none', comp_expires_at: null, analyses: 1, joined: '2026-03-10' },
-  { id: '5', email: 'kira@dj.club', plan: 'pro', comp_type: 'timed', comp_expires_at: '2026-06-30', analyses: 42, joined: '2025-12-22' },
-]
 
 function getPlanBadgeVariant(plan: PlanTier) {
   if (plan === 'legendary') return 'amber' as const
@@ -32,8 +25,42 @@ function getPlanBadgeVariant(plan: PlanTier) {
 
 export default function UsersTable() {
   const [search, setSearch] = useState('')
-  const [users, setUsers] = useState(initialUsers)
-  const [compModal, setCompModal] = useState<{ open: boolean; user: MockUser | null }>({ open: false, user: null })
+  const [users, setUsers] = useState<UserRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [compModal, setCompModal] = useState<{ open: boolean; user: UserRow | null }>({ open: false, user: null })
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, plan, comp_type, comp_expires_at, analyses_this_month, created_at')
+          .order('created_at', { ascending: false })
+          .limit(100)
+
+        if (error) throw error
+
+        setUsers(
+          (data ?? []).map((u) => ({
+            id: u.id,
+            email: u.email ?? '',
+            plan: (u.plan ?? 'free') as PlanTier,
+            comp_type: (u.comp_type ?? 'none') as CompType,
+            comp_expires_at: u.comp_expires_at,
+            analyses_this_month: u.analyses_this_month ?? 0,
+            created_at: new Date(u.created_at).toLocaleDateString(),
+          }))
+        )
+      } catch {
+        // Supabase not connected - show empty state
+        setUsers([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [])
 
   const filtered = users.filter((u) => u.email.toLowerCase().includes(search.toLowerCase()))
 
@@ -41,6 +68,23 @@ export default function UsersTable() {
     setUsers((prev) => prev.map((u) =>
       u.id === userId ? { ...u, plan, comp_type: compType, comp_expires_at: expiresAt } : u
     ))
+  }
+
+  if (loading) {
+    return (
+      <div className="glass-card p-8 text-center">
+        <div className="w-6 h-6 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm text-text-muted font-mono">Loading users...</p>
+      </div>
+    )
+  }
+
+  if (users.length === 0) {
+    return (
+      <div className="glass-card p-8 text-center">
+        <p className="text-sm text-text-muted">No users found. Make sure Supabase is connected and the schema is set up.</p>
+      </div>
+    )
   }
 
   return (
@@ -81,30 +125,27 @@ export default function UsersTable() {
                   {user.comp_type === 'lifetime' && (
                     <Badge variant="green" className="text-[10px]">LIFETIME</Badge>
                   )}
-                  {user.comp_type === 'timed' && (
+                  {user.comp_type === 'timed' && user.comp_expires_at && (
                     <Badge variant="purple" className="text-[10px]">
-                      Until {user.comp_expires_at}
+                      Until {new Date(user.comp_expires_at).toLocaleDateString()}
                     </Badge>
                   )}
                   {user.comp_type === 'none' && (
                     <span className="text-text-muted text-xs">--</span>
                   )}
                 </td>
-                <td className="py-3 px-4 text-center font-mono text-text-secondary hidden md:table-cell">{user.analyses}</td>
-                <td className="py-3 px-4 text-center font-mono text-text-secondary text-xs hidden md:table-cell">{user.joined}</td>
+                <td className="py-3 px-4 text-center font-mono text-text-secondary hidden md:table-cell">{user.analyses_this_month}</td>
+                <td className="py-3 px-4 text-center font-mono text-text-secondary text-xs hidden md:table-cell">{user.created_at}</td>
                 <td className="py-3 px-4 text-center">
-                  <div className="flex gap-1 justify-center">
-                    <Button variant="muted" size="sm" className="text-xs">View</Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => setCompModal({ open: true, user })}
-                    >
-                      <Gift className="w-3 h-3" />
-                      Comp
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setCompModal({ open: true, user })}
+                  >
+                    <Gift className="w-3 h-3" />
+                    Comp
+                  </Button>
                 </td>
               </tr>
             ))}

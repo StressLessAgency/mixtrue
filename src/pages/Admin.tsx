@@ -1,47 +1,64 @@
+import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart3 } from 'lucide-react'
+import { Activity, UserPlus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import PageTransition from '@/components/layout/PageTransition'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import UsersTable from '@/components/admin/UsersTable'
 import SessionsTable from '@/components/admin/SessionsTable'
 import APIConfigForm from '@/components/admin/APIConfigForm'
 import SystemHealthPanel from '@/components/admin/SystemHealthPanel'
+import AddUserModal from '@/components/admin/AddUserModal'
 
 export default function Admin() {
+  const [addUserOpen, setAddUserOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleUserAdded = useCallback(() => {
+    setRefreshKey((k) => k + 1)
+  }, [])
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-bg-primary">
-        <nav className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+        <nav className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border-subtle">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent-cyan/20 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-accent-cyan" />
+            <div className="w-8 h-8 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center">
+              <Activity className="w-5 h-5 text-accent-cyan" />
             </div>
             <span className="font-display font-bold text-lg text-text-primary">
               mixtrue
             </span>
           </Link>
-          <Link to="/app/upload" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
-            Back to App
-          </Link>
+          <div className="flex items-center gap-3">
+            <Button variant="primary" size="sm" onClick={() => setAddUserOpen(true)}>
+              <UserPlus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Add & Comp User</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+            <Link to="/app/upload" className="text-xs font-mono text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider">
+              App
+            </Link>
+          </div>
         </nav>
 
         <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
-          <h1 className="font-display font-bold text-2xl text-text-primary mb-8">Admin Dashboard</h1>
+          <h1 className="font-display font-bold text-2xl text-text-primary mb-6">Admin Dashboard</h1>
 
           <Tabs defaultValue="health">
             <TabsList>
-              <TabsTrigger value="health">System Health</TabsTrigger>
+              <TabsTrigger value="health">Health</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="sessions">Sessions</TabsTrigger>
-              <TabsTrigger value="config">API Config</TabsTrigger>
+              <TabsTrigger value="config">Config</TabsTrigger>
             </TabsList>
 
             <TabsContent value="health">
-              <SystemHealthPanel />
+              <SystemHealthPanel key={refreshKey} />
             </TabsContent>
 
             <TabsContent value="users">
-              <UsersTable />
+              <UsersTable key={refreshKey} />
             </TabsContent>
 
             <TabsContent value="sessions">
@@ -53,6 +70,12 @@ export default function Admin() {
             </TabsContent>
           </Tabs>
         </div>
+
+        <AddUserModal
+          open={addUserOpen}
+          onClose={() => setAddUserOpen(false)}
+          onUserAdded={handleUserAdded}
+        />
       </div>
     </PageTransition>
   )

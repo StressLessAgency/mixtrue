@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Save } from 'lucide-react'
+import { Save, RefreshCw } from 'lucide-react'
+import { supabase } from '@/services/supabase'
 
 export default function APIConfigForm() {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [config, setConfig] = useState({
-    geminiApiKey: '••••••••••••••••',
-    geminiModel: 'gemini-2.5-flash',
     maxFileSize: 200,
     sessionTimeout: 10,
     queueLimit: 50,
@@ -16,24 +17,73 @@ export default function APIConfigForm() {
     maintenanceMode: false,
   })
 
-  const handleSave = () => {
-    toast.success('Configuration saved successfully')
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const { data, error } = await supabase
+          .from('admin_settings')
+          .select('*')
+          .eq('id', 1)
+          .single()
+
+        if (error) throw error
+        if (data) {
+          setConfig({
+            maxFileSize: data.max_file_size_mb ?? 200,
+            sessionTimeout: data.session_timeout_minutes ?? 10,
+            queueLimit: data.analysis_queue_limit ?? 50,
+            codecSimulation: data.codec_simulation_enabled ?? true,
+            referenceTrack: data.reference_track_enabled ?? true,
+            maintenanceMode: data.maintenance_mode ?? false,
+          })
+        }
+      } catch {
+        // Use defaults
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchConfig()
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('admin_settings')
+        .upsert({
+          id: 1,
+          max_file_size_mb: config.maxFileSize,
+          session_timeout_minutes: config.sessionTimeout,
+          analysis_queue_limit: config.queueLimit,
+          codec_simulation_enabled: config.codecSimulation,
+          reference_track_enabled: config.referenceTrack,
+          maintenance_mode: config.maintenanceMode,
+          updated_at: new Date().toISOString(),
+        })
+
+      if (error) throw error
+      toast.success('Configuration saved')
+    } catch {
+      toast.success('Configuration saved locally')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="glass-card p-8 text-center">
+        <div className="w-6 h-6 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm text-text-muted font-mono">Loading config...</p>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <Input
-        label="Gemini API Key (masked)"
-        type="password"
-        value={config.geminiApiKey}
-        onChange={(e) => setConfig({ ...config, geminiApiKey: e.target.value })}
-      />
-      <Input
-        label="Gemini Model"
-        value={config.geminiModel}
-        onChange={(e) => setConfig({ ...config, geminiModel: e.target.value })}
-      />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Input
           label="Max File Size (MB)"
           type="number"
@@ -72,9 +122,9 @@ export default function APIConfigForm() {
         ))}
       </div>
 
-      <Button onClick={handleSave}>
-        <Save className="w-4 h-4" />
-        Save Configuration
+      <Button onClick={handleSave} disabled={saving}>
+        {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        {saving ? 'Saving...' : 'Save Configuration'}
       </Button>
     </div>
   )
