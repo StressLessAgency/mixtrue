@@ -53,8 +53,8 @@ export default function Landing() {
               mixtrue
             </span>
           </Link>
-          <div className="flex items-center gap-5">
-            <Link to="/pricing" className="text-xs font-mono text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider">
+          <div className="flex items-center gap-3 md:gap-5">
+            <Link to="/pricing" className="hidden sm:block text-xs font-mono text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider">
               Pricing
             </Link>
             <Link to="/login" className="text-xs font-mono text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider">

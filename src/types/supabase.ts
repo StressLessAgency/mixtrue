@@ -1,9 +1,15 @@
+export type PlanTier = 'free' | 'pro' | 'legendary'
+export type CompType = 'none' | 'lifetime' | 'timed'
+
 export interface Profile {
   id: string
   email: string
   full_name: string | null
   role: 'user' | 'admin'
-  plan: 'free' | 'pro'
+  plan: PlanTier
+  comp_type?: CompType
+  comp_expires_at?: string | null
+  comp_granted_by?: string | null
   stripe_customer_id: string | null
   analyses_this_month: number
   created_at: string

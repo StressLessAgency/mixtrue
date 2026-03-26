@@ -55,7 +55,7 @@ export default function Processing() {
     return () => clearTimeout(timeout)
   }, [isComplete, error])
 
-  // Gemini AI analysis
+  // Audio analysis
   useEffect(() => {
     if (!USE_GEMINI || !file || !genre || !analysisMode || geminiStarted.current) return
     geminiStarted.current = true

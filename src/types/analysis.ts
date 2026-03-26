@@ -239,6 +239,13 @@ export interface AIFixesAnalysis {
   beforeAfterSpectrum: { frequency: number; before: number; after: number }[]
 }
 
+export interface ReferenceTrackSuggestion {
+  artist: string
+  track: string
+  reason: string
+  relevantMetric: string
+}
+
 export interface TabInsight {
   title: string
   explanation: string
@@ -321,5 +328,6 @@ export interface ReportData {
   clubReadiness: ClubReadinessAnalysis
   master: MasterAnalysis
   aiFixes: AIFixesAnalysis
+  referenceTrackSuggestions?: ReferenceTrackSuggestion[]
   deletionReceipt: DeletionReceipt
 }

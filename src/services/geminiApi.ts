@@ -48,7 +48,7 @@ Genre: ${genre}
 Analysis Mode: ${mode}
 File Size: ${fileSizeMb} MB
 
-Analyze the audio and return a JSON object matching this exact structure. Be specific, actionable, and genre-aware in your analysis. Use your expertise to evaluate frequency balance, dynamics, stereo field, club readiness, mastering quality, and provide AI fix recommendations.
+Analyze the audio and return a JSON object matching this exact structure. Be specific, actionable, and genre-aware in your analysis. Use your expertise to evaluate frequency balance, dynamics, stereo field, club readiness, mastering quality, and provide fix recommendations.
 
 Return ONLY valid JSON (no markdown, no code fences) with this structure:
 
@@ -187,7 +187,15 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
     "beforeAfterSpectrum": [
       { "frequency": <Hz>, "before": <dB float>, "after": <dB float> }
     ]
-  }
+  },
+  "referenceTrackSuggestions": [
+    {
+      "artist": "<well-known artist name>",
+      "track": "<specific track title>",
+      "reason": "<why this track is a good reference for the user's mix - what quality it exemplifies>",
+      "relevantMetric": "<which analysis area this relates to, e.g. Sub-Bass, Stereo Width, Dynamic Range>"
+    }
+  ]
 }
 
 IMPORTANT GUIDELINES:
@@ -200,8 +208,9 @@ IMPORTANT GUIDELINES:
 - Be honest and specific about issues detected
 - Provide actionable, professional-grade recommendations
 - Include at least 3-5 priority issues
-- Include at least 3-5 AI fix recommendations
+- Include at least 3-5 fix recommendations
 - All scores should reflect genuine analysis, not just high numbers
+- Include 3-5 reference track suggestions: well-known, commercially released tracks in the ${genre} genre that exemplify qualities the user's mix could improve on (e.g. better sub-bass, cleaner high end, tighter dynamics). Use real artist names and track titles.
 - Return ONLY the JSON object, no other text`
 }
 

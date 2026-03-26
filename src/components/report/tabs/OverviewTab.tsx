@@ -1,5 +1,6 @@
 import PriorityFixList from '../PriorityFixList'
 import CategoryScoreCard from '../CategoryScoreCard'
+import ReferenceTrackList from '../ReferenceTrackList'
 import type { ReportData } from '@/types/analysis'
 
 interface OverviewTabProps {
@@ -14,7 +15,7 @@ export default function OverviewTab({ report, onNavigateTab }: OverviewTabProps)
 
       <div>
         <h3 className="font-display font-semibold text-lg text-text-primary mb-4">Score Summary</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {report.categoryScores.map((cat) => (
             <CategoryScoreCard
               key={cat.category}
@@ -25,6 +26,10 @@ export default function OverviewTab({ report, onNavigateTab }: OverviewTabProps)
           ))}
         </div>
       </div>
+
+      {report.referenceTrackSuggestions && report.referenceTrackSuggestions.length > 0 && (
+        <ReferenceTrackList tracks={report.referenceTrackSuggestions} />
+      )}
     </div>
   )
 }
