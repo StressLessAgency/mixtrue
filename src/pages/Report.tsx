@@ -111,9 +111,9 @@ export default function Report() {
         <div className="daw-panel p-5">
           <div className="flex flex-col lg:flex-row gap-6 items-start">
             {/* Score gauges row */}
-            <div className="flex items-center gap-5">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
               <OverallScoreGauge score={report.overallScore} size={130} strokeWidth={8} label="Overall" />
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-row sm:flex-col gap-3">
                 <OverallScoreGauge score={report.mixdownScore} size={64} strokeWidth={4} label="Mix" />
                 <OverallScoreGauge score={report.clubScore} size={64} strokeWidth={4} label="Club" />
                 <OverallScoreGauge score={report.masterScore} size={64} strokeWidth={4} label="Master" />

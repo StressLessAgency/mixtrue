@@ -25,7 +25,7 @@ export default function Admin() {
           </Link>
         </nav>
 
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
           <h1 className="font-display font-bold text-2xl text-text-primary mb-8">Admin Dashboard</h1>
 
           <Tabs defaultValue="health">

@@ -139,7 +139,7 @@ export default function Landing() {
               viewport={{ once: true }}
               className="daw-panel overflow-hidden"
             >
-              <div className="grid grid-cols-[1fr_100px_100px] text-xs font-mono">
+              <div className="grid grid-cols-[1fr_60px_60px] sm:grid-cols-[1fr_100px_100px] text-xs font-mono">
                 <div className="px-4 py-3 text-text-muted uppercase tracking-wider border-b border-border-subtle">Feature</div>
                 <div className="px-4 py-3 text-accent-cyan text-center border-b border-border-subtle">mixtrue</div>
                 <div className="px-4 py-3 text-text-muted text-center border-b border-border-subtle">Others</div>
@@ -352,7 +352,7 @@ export default function Landing() {
                   Professional audio mix and master analysis for producers, engineers, and labels.
                 </p>
               </div>
-              <div className="flex gap-12">
+              <div className="flex gap-8 sm:gap-12">
                 <div className="space-y-2">
                   <h4 className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Product</h4>
                   <div className="flex flex-col gap-1.5">
