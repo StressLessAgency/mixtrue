@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import PageTransition from '@/components/layout/PageTransition'
@@ -9,7 +9,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSessionStore } from '@/stores/useSessionStore'
 import { mockStatusStages, mockDeletionReceipt } from '@/services/mockData'
+import { analyzeWithGemini } from '@/services/geminiApi'
 import type { ProcessingStage } from '@/types/analysis'
+
+const HAS_GEMINI = !!import.meta.env.VITE_GEMINI_API_KEY
 
 const operations = [
   'Encrypting audio file with AES-256...',
@@ -25,34 +28,54 @@ const operations = [
 
 export default function Processing() {
   const navigate = useNavigate()
-  const { genre, analysisMode, file, sessionId } = useSessionStore()
+  const { genre, analysisMode, file, sessionId, setReport } = useSessionStore()
   const [currentStage, setCurrentStage] = useState(0)
   const [stages, setStages] = useState<ProcessingStage[]>(
     mockStatusStages.stages.map((s, i) => i === 0 ? { ...s, status: 'active' as const } : s)
   )
   const [done, setDone] = useState(false)
+  const [error, _setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(3)
+  const geminiLaunched = useRef(false)
 
   const total = stages.length
   const pct = Math.round((currentStage / total) * 100)
   const reportPath = `/app/report/${sessionId ?? 'demo'}`
 
-  // Simple timer: advance one stage every 1.5s
+  // Launch Gemini analysis in background (fire and forget - animation runs independently)
   useEffect(() => {
-    if (done) return
+    if (!HAS_GEMINI || !file || !genre || !analysisMode || geminiLaunched.current) return
+    geminiLaunched.current = true
+
+    analyzeWithGemini({ file, genre, mode: analysisMode })
+      .then((report) => {
+        report.sessionId = sessionId ?? 'demo'
+        setReport(report)
+        console.log('[mixtrue] Gemini analysis complete')
+      })
+      .catch((err) => {
+        console.error('[mixtrue] Gemini failed:', err)
+        // Don't block - mock report will be used as fallback
+      })
+  }, [file, genre, analysisMode, sessionId, setReport])
+
+  // Stage animation timer - always runs regardless of Gemini
+  useEffect(() => {
+    if (done || error) return
     if (currentStage >= total) {
       setDone(true)
       return
     }
+    const delay = HAS_GEMINI ? 2500 : 1500
     const id = setTimeout(() => {
       setStages(prev => prev.map((s, i) =>
         i === currentStage ? { ...s, status: 'completed' as const } :
         i === currentStage + 1 ? { ...s, status: 'active' as const } : s
       ))
       setCurrentStage(n => n + 1)
-    }, 1500)
+    }, delay)
     return () => clearTimeout(id)
-  }, [currentStage, total, done])
+  }, [currentStage, total, done, error])
 
   // Countdown then navigate
   useEffect(() => {
@@ -87,41 +110,50 @@ export default function Processing() {
           <Badge variant="purple">{analysisMode ?? 'both'}</Badge>
         </div>
 
-        <ProcessingPipeline stages={stages} currentStage={currentStage} />
-
-        <div className="mt-8 space-y-3">
-          <Progress value={pct} showLabel />
-          <p className="text-xs text-text-secondary font-mono">
-            {currentStage < total ? operations[currentStage] ?? 'Processing...' : 'Analysis complete!'}
-          </p>
-        </div>
-
-        {/* Skip button after a few stages */}
-        {!done && currentStage >= 2 && (
-          <div className="mt-6 text-center">
-            <Button variant="muted" size="sm" onClick={goToReport}>
-              Skip to report
-            </Button>
+        {error ? (
+          <div className="glass-card p-8 text-center space-y-4">
+            <p className="text-accent-red font-display font-semibold">Analysis Failed</p>
+            <p className="text-sm text-text-secondary">{error}</p>
+            <Button variant="primary" size="md" onClick={goToReport}>View Demo Report</Button>
           </div>
-        )}
+        ) : (
+          <>
+            <ProcessingPipeline stages={stages} currentStage={currentStage} />
 
-        {done && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8 space-y-6"
-          >
-            <DeletionReceipt receipt={mockDeletionReceipt} />
-            <div className="text-center space-y-2">
-              <p className="text-sm text-text-secondary">
-                Redirecting to your report in{' '}
-                <span className="font-mono text-accent-cyan">{countdown}s</span>
+            <div className="mt-8 space-y-3">
+              <Progress value={pct} showLabel />
+              <p className="text-xs text-text-secondary font-mono">
+                {currentStage < total ? operations[currentStage] ?? 'Processing...' : 'Analysis complete!'}
               </p>
-              <Button variant="outline" size="sm" onClick={goToReport}>
-                Go to Report Now
-              </Button>
             </div>
-          </motion.div>
+
+            {!done && currentStage >= 2 && (
+              <div className="mt-6 text-center">
+                <Button variant="muted" size="sm" onClick={goToReport}>
+                  Skip to report
+                </Button>
+              </div>
+            )}
+
+            {done && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8 space-y-6"
+              >
+                <DeletionReceipt receipt={mockDeletionReceipt} />
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-text-secondary">
+                    Redirecting to your report in{' '}
+                    <span className="font-mono text-accent-cyan">{countdown}s</span>
+                  </p>
+                  <Button variant="outline" size="sm" onClick={goToReport}>
+                    Go to Report Now
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
     </PageTransition>
