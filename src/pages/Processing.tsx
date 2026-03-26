@@ -66,7 +66,7 @@ export default function Processing() {
       setDone(true)
       return
     }
-    const delay = HAS_GEMINI ? 2500 : 1500
+    const delay = HAS_GEMINI ? 4000 : 1500
     const id = setTimeout(() => {
       setStages(prev => prev.map((s, i) =>
         i === currentStage ? { ...s, status: 'completed' as const } :

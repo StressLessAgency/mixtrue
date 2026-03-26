@@ -41,26 +41,35 @@ export default function Report() {
       return
     }
 
+    // If no stored report yet, wait up to 15s for Gemini to finish
+    // (it might still be processing in the background)
+    let attempts = 0
+    const maxAttempts = 15
+    const checkInterval = setInterval(() => {
+      const current = useSessionStore.getState().report
+      attempts++
+      if (current && current.sessionId === sessionId) {
+        clearInterval(checkInterval)
+        setReport(current)
+        setLoading(false)
+        return
+      }
+      if (attempts >= maxAttempts) {
+        clearInterval(checkInterval)
+        // Fall back to mock data
+        analysisApi.getReport(sessionId)
+          .then(setReport)
+          .catch(() => setError('Report not available'))
+          .finally(() => setLoading(false))
+      }
+    }, 1000)
+
+    if (signal) {
+      signal.addEventListener('abort', () => clearInterval(checkInterval))
+    }
+
     setLoading(true)
     setError(null)
-
-    const reportPromise = analysisApi.getReport(sessionId)
-
-    const abortPromise = signal
-      ? new Promise<never>((_, reject) => {
-          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
-        })
-      : null
-
-    const request = abortPromise ? Promise.race([reportPromise, abortPromise]) : reportPromise
-
-    request
-      .then(setReport)
-      .catch((err) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return
-        setError(err instanceof Error ? err.message : 'Failed to load report')
-      })
-      .finally(() => setLoading(false))
   }, [sessionId, storedReport])
 
   useEffect(() => {
