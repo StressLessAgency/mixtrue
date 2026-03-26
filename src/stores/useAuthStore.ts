@@ -10,7 +10,7 @@ interface AuthState {
   isLoading: boolean
 
   setUser: (user: Profile | null) => void
-  setSupabaseUser: (user: User | null) => void
+  setSupabaseUser: (supabaseUser: User | null) => void
   setLoading: (isLoading: boolean) => void
   logout: () => Promise<void>
   initialize: () => Promise<void>
@@ -34,14 +34,20 @@ function fallbackProfile(user: User): Profile {
 
 async function fetchProfile(user: User): Promise<Profile> {
   try {
-    const { data, error } = await supabase
+    const query = supabase
       .from('profiles')
-      .select('*')
+      .select('id, email, full_name, role, plan, comp_type, comp_expires_at, comp_granted_by, stripe_customer_id, analyses_this_month, created_at')
       .eq('id', user.id)
       .single()
 
-    if (error || !data) return fallbackProfile(user)
+    const result = await Promise.race([
+      query.then((r) => r),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+    ])
 
+    if (!result || result.error || !result.data) return fallbackProfile(user)
+
+    const data = result.data
     return {
       id: data.id,
       email: data.email ?? user.email ?? '',
@@ -74,8 +80,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
+        // Set authenticated immediately with fallback, then upgrade with real profile
+        const fb = fallbackProfile(session.user)
+        set({ user: fb, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
+        // Fetch real profile in background
         const profile = await fetchProfile(session.user)
-        set({ user: profile, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
+        set({ user: profile })
       } else {
         set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
       }
@@ -85,10 +95,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        const fb = fallbackProfile(session.user)
+        set({ user: fb, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
         const profile = await fetchProfile(session.user)
-        set({ user: profile, supabaseUser: session.user, isAuthenticated: true })
+        set({ user: profile })
       } else {
-        set({ user: null, supabaseUser: null, isAuthenticated: false })
+        set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
       }
     })
   },
@@ -104,20 +116,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signInWithEmail: async (email: string, password: string) => {
-    set({ isLoading: true })
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    set({ isLoading: false })
     if (error) throw error
+    // Auth state change listener handles the rest
   },
 
   signUpWithEmail: async (email: string, password: string, fullName: string) => {
-    set({ isLoading: true })
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     })
-    set({ isLoading: false })
     if (error) throw error
   },
 
