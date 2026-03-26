@@ -44,7 +44,7 @@ export default function Landing() {
     <PageTransition>
       <div className="min-h-screen bg-bg-primary">
         {/* Nav */}
-        <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3 bg-bg-primary/80 backdrop-blur-xl border-b border-border-subtle">
+        <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 bg-bg-primary/80 backdrop-blur-xl border-b border-border-subtle">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center">
               <Activity className="w-4 h-4 text-accent-cyan" />
@@ -74,7 +74,7 @@ export default function Landing() {
         <HowItWorksSection />
 
         {/* Social Proof / Testimonials */}
-        <section className="py-28 px-6 relative">
+        <section className="py-16 sm:py-28 px-4 sm:px-6 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent-purple/[0.02] to-transparent" />
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div
@@ -84,7 +84,7 @@ export default function Landing() {
               className="text-center mb-16"
             >
               <span className="text-xs font-mono text-accent-purple uppercase tracking-widest mb-3 block">Testimonials</span>
-              <h2 className="font-display font-bold text-3xl md:text-4xl text-text-primary mb-4">
+              <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-text-primary mb-4">
                 Trusted by producers worldwide
               </h2>
             </motion.div>
@@ -116,7 +116,7 @@ export default function Landing() {
         </section>
 
         {/* Comparison Table */}
-        <section className="py-28 px-6">
+        <section className="py-16 sm:py-28 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -125,7 +125,7 @@ export default function Landing() {
               className="text-center mb-16"
             >
               <span className="text-xs font-mono text-accent-green uppercase tracking-widest mb-3 block">Why mixtrue</span>
-              <h2 className="font-display font-bold text-3xl md:text-4xl text-text-primary mb-4">
+              <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-text-primary mb-4">
                 More than a loudness meter
               </h2>
               <p className="text-text-secondary max-w-xl mx-auto">
@@ -166,7 +166,7 @@ export default function Landing() {
         </section>
 
         {/* Use Cases */}
-        <section className="py-28 px-6 relative">
+        <section className="py-16 sm:py-28 px-4 sm:px-6 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent-pink/[0.02] to-transparent" />
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div
@@ -176,7 +176,7 @@ export default function Landing() {
               className="text-center mb-16"
             >
               <span className="text-xs font-mono text-accent-pink uppercase tracking-widest mb-3 block">Built For</span>
-              <h2 className="font-display font-bold text-3xl md:text-4xl text-text-primary">
+              <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-text-primary">
                 Every stage of your workflow
               </h2>
             </motion.div>
@@ -231,7 +231,7 @@ export default function Landing() {
         </section>
 
         {/* Pricing Preview */}
-        <section className="py-28 px-6">
+        <section className="py-16 sm:py-28 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -239,7 +239,7 @@ export default function Landing() {
               viewport={{ once: true }}
             >
               <span className="text-xs font-mono text-accent-amber uppercase tracking-widest mb-3 block">Pricing</span>
-              <h2 className="font-display font-bold text-3xl md:text-4xl text-text-primary mb-4">
+              <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-text-primary mb-4">
                 Start free. Scale when ready.
               </h2>
               <p className="text-text-secondary mb-10">
@@ -303,7 +303,7 @@ export default function Landing() {
         </section>
 
         {/* Final CTA */}
-        <section className="py-28 px-6 relative overflow-hidden">
+        <section className="py-16 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
           <div className="absolute inset-0 mesh-gradient opacity-60" />
           <motion.div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
@@ -318,7 +318,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="font-display font-bold text-4xl md:text-5xl text-text-primary mb-6">
+              <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-text-primary mb-6">
                 Ready to hear the <span className="text-accent-cyan text-glow-cyan">truth</span>?
               </h2>
               <p className="text-text-secondary text-lg mb-10 max-w-xl mx-auto">

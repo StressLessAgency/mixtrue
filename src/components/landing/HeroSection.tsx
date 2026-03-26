@@ -38,7 +38,7 @@ const stats = [
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden pt-20">
+    <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 overflow-hidden pt-24 pb-12">
       {/* Mesh gradient background */}
       <div className="absolute inset-0 mesh-gradient" />
       <div className="absolute inset-0 grid-pattern" />
@@ -80,7 +80,7 @@ export default function HeroSection() {
         {/* Headline */}
         <motion.h1
           variants={itemVariants}
-          className="font-display font-bold text-5xl md:text-7xl text-text-primary leading-tight mb-6"
+          className="font-display font-bold text-4xl sm:text-5xl md:text-7xl text-text-primary leading-tight mb-6"
         >
           Your mix.
           <br />
@@ -90,14 +90,14 @@ export default function HeroSection() {
         {/* Subheadline */}
         <motion.p
           variants={itemVariants}
-          className="font-body text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10"
+          className="font-body text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 px-2"
         >
           Upload your track and get a professional-grade mix analysis in seconds.
           Frequency balance, dynamics, stereo field, club readiness, mastering — all in one report.
         </motion.p>
 
         {/* CTA Buttons */}
-        <motion.div variants={itemVariants} className="flex flex-wrap gap-4 justify-center mb-12">
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center mb-12 w-full sm:w-auto px-4 sm:px-0">
           <Link to="/signup">
             <Button size="xl" variant="primary" className="shadow-[0_0_30px_rgba(0,229,255,0.2)]">
               <FileAudio className="w-5 h-5" />
