@@ -6,8 +6,8 @@ import { Save } from 'lucide-react'
 
 export default function APIConfigForm() {
   const [config, setConfig] = useState({
-    apiEndpoint: 'https://api.mixtrue-ai.com/v1',
-    apiKey: '••••••••••••••••',
+    geminiApiKey: '••••••••••••••••',
+    geminiModel: 'gemini-2.5-flash',
     maxFileSize: 200,
     sessionTimeout: 10,
     queueLimit: 50,
@@ -23,15 +23,15 @@ export default function APIConfigForm() {
   return (
     <div className="space-y-6 max-w-2xl">
       <Input
-        label="AI Analysis API Endpoint URL"
-        value={config.apiEndpoint}
-        onChange={(e) => setConfig({ ...config, apiEndpoint: e.target.value })}
+        label="Gemini API Key (masked)"
+        type="password"
+        value={config.geminiApiKey}
+        onChange={(e) => setConfig({ ...config, geminiApiKey: e.target.value })}
       />
       <Input
-        label="API Key (masked)"
-        type="password"
-        value={config.apiKey}
-        onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+        label="Gemini Model"
+        value={config.geminiModel}
+        onChange={(e) => setConfig({ ...config, geminiModel: e.target.value })}
       />
       <div className="grid grid-cols-3 gap-4">
         <Input
