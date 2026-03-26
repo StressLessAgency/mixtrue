@@ -75,9 +75,15 @@ export const analysisApi = {
       return { ...mockReport, sessionId }
     }
 
-    const res = await fetchWithTimeout(`${API_BASE}/report/${sessionId}`)
-    if (!res.ok) throw new Error(`Report API error: ${res.status}`)
-    return res.json() as Promise<ReportData>
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/report/${sessionId}`)
+      if (!res.ok) throw new Error(`Report API error: ${res.status}`)
+      return res.json() as Promise<ReportData>
+    } catch {
+      // Fall back to mock data when no backend is available
+      await delay(300)
+      return { ...mockReport, sessionId }
+    }
   },
 
   confirmDeletion: async (sessionId: string): Promise<DeletionReceipt> => {
