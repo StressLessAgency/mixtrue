@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Upload, History, CreditCard, Shield, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 const navItems = [
   { path: '/app/upload', label: 'Upload', icon: Upload },
@@ -11,6 +12,7 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation()
+  const user = useAuthStore((s) => s.user)
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-bg-secondary border-r border-border-subtle flex flex-col z-40">
@@ -50,7 +52,7 @@ export default function Sidebar() {
       <div className="p-4 border-t border-border-subtle">
         <div className="flex items-center gap-2 text-xs text-text-muted">
           <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
-          <span>2 of 3 analyses used</span>
+          <span>{user?.analyses_this_month ?? 0} of {user?.plan === 'pro' ? '∞' : '3'} analyses used</span>
         </div>
       </div>
     </aside>

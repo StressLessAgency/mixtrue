@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import AppShell from './components/layout/AppShell'
+import { useAuthStore } from './stores/useAuthStore'
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Login = lazy(() => import('./pages/Login'))
@@ -24,8 +25,21 @@ function PageLoader() {
   )
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuthStore()
+
+  if (isLoading) return <PageLoader />
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   const location = useLocation()
+  const initialize = useAuthStore((s) => s.initialize)
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
 
   return (
     <div className="grain-overlay">
@@ -36,13 +50,13 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/pricing" element={<Pricing />} />
-            <Route path="/app" element={<AppShell />}>
+            <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="upload" element={<Upload />} />
               <Route path="processing" element={<Processing />} />
               <Route path="report/:sessionId" element={<Report />} />
               <Route path="history" element={<History />} />
             </Route>
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           </Routes>
         </AnimatePresence>
       </Suspense>

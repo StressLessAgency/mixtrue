@@ -1,21 +1,42 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BarChart3, Mail, Lock, User, Globe } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PageTransition from '@/components/layout/PageTransition'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 export default function Signup() {
   const navigate = useNavigate()
+  const { signUpWithEmail, signInWithGoogle } = useAuthStore()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [agreed, setAgreed] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!agreed) return
-    navigate('/app/upload')
+    setLoading(true)
+    try {
+      await signUpWithEmail(email, password, name)
+      toast.success('Account created! Check your email to confirm.')
+      navigate('/login')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Sign up failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogle = async () => {
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Google sign in failed')
+    }
   }
 
   return (
@@ -44,6 +65,7 @@ export default function Signup() {
                 onChange={(e) => setName(e.target.value)}
                 className="pl-10"
                 aria-label="Full name"
+                required
               />
             </div>
             <div className="relative">
@@ -55,17 +77,20 @@ export default function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
                 aria-label="Email address"
+                required
               />
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <Input
                 type="password"
-                placeholder="Password"
+                placeholder="Password (min 6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
                 aria-label="Password"
+                minLength={6}
+                required
               />
             </div>
             <label className="flex items-start gap-2 cursor-pointer">
@@ -80,8 +105,8 @@ export default function Signup() {
                 I agree to the Terms of Service and Privacy Policy
               </span>
             </label>
-            <Button type="submit" className="w-full" size="lg" disabled={!agreed}>
-              Create Account
+            <Button type="submit" className="w-full" size="lg" disabled={!agreed || loading}>
+              {loading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
 
@@ -94,7 +119,7 @@ export default function Signup() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" size="lg" onClick={() => navigate('/app/upload')}>
+          <Button variant="outline" className="w-full" size="lg" onClick={handleGoogle}>
             <Globe className="w-4 h-4" />
             Continue with Google
           </Button>
