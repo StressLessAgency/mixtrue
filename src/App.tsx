@@ -33,6 +33,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, user } = useAuthStore()
+
+  if (isLoading) return <PageLoader />
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (user?.role !== 'admin') return <Navigate to="/app/upload" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   const location = useLocation()
   const initialize = useAuthStore((s) => s.initialize)
@@ -56,7 +65,7 @@ export default function App() {
               <Route path="report/:sessionId" element={<Report />} />
               <Route path="history" element={<History />} />
             </Route>
-            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           </Routes>
         </AnimatePresence>
       </Suspense>
