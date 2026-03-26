@@ -83,23 +83,32 @@ export default function Processing() {
       })
   }, [file, genre, analysisMode, reportId, setReport, totalStages])
 
-  // Animated stage progression - runs for BOTH Gemini and mock mode
-  // For Gemini: provides visual progress while waiting for the API
-  // For mock: is the actual simulation
+  // Animated stage progression
   useEffect(() => {
     if (isTimedOut || error || isComplete) return
-    if (geminiDone.current) return
     if (currentStage >= totalStages) {
-      if (!USE_GEMINI) setIsComplete(true)
+      // In mock mode, completing stages means we're done
+      // In Gemini mode, if Gemini already finished, we're done too
+      if (!USE_GEMINI || geminiDone.current) {
+        setIsComplete(true)
+      }
+      // If Gemini mode and not done yet, just wait - the Gemini .then() will handle it
       return
     }
 
     const delay = USE_GEMINI
-      ? 2500 + Math.random() * 2000  // Slower pacing for Gemini (it takes longer)
-      : 1200 + Math.random() * 800   // Faster for mock
+      ? 2500 + Math.random() * 2000
+      : 1200 + Math.random() * 800
 
     const timer = setTimeout(() => {
-      if (geminiDone.current) return
+      if (geminiDone.current && USE_GEMINI) {
+        // Gemini finished while we were animating - jump to complete
+        setStages((prev) => prev.map((s) => ({ ...s, status: 'completed' as const })))
+        setCurrentStage(totalStages)
+        setCurrentOperation('Analysis complete!')
+        setIsComplete(true)
+        return
+      }
       setStages((prev) =>
         prev.map((s, i) =>
           i === currentStage ? { ...s, status: 'completed' as const } :
