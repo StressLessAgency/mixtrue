@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import PageTransition from '@/components/layout/PageTransition'
@@ -9,12 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSessionStore } from '@/stores/useSessionStore'
 import { mockStatusStages, mockDeletionReceipt } from '@/services/mockData'
-import { analyzeWithGemini } from '@/services/geminiApi'
 import type { ProcessingStage } from '@/types/analysis'
 
-const USE_GEMINI = !!import.meta.env.VITE_GEMINI_API_KEY
-
-const mockOperations = [
+const operations = [
   'Encrypting audio file with AES-256...',
   'Spinning up ephemeral container...',
   'Running FFT spectral analysis...',
@@ -26,135 +23,54 @@ const mockOperations = [
   'Wiping temporary storage securely...',
 ]
 
-const MAX_PROCESSING_TIME_MS = 90_000
-
 export default function Processing() {
   const navigate = useNavigate()
-  const { genre, analysisMode, file, sessionId, setReport } = useSessionStore()
+  const { genre, analysisMode, file, sessionId } = useSessionStore()
   const [currentStage, setCurrentStage] = useState(0)
-  const [stages, setStages] = useState<ProcessingStage[]>(mockStatusStages.stages)
-  const [isComplete, setIsComplete] = useState(false)
+  const [stages, setStages] = useState<ProcessingStage[]>(
+    mockStatusStages.stages.map((s, i) => i === 0 ? { ...s, status: 'active' as const } : s)
+  )
+  const [done, setDone] = useState(false)
   const [countdown, setCountdown] = useState(3)
-  const [isTimedOut, setIsTimedOut] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [currentOperation, setCurrentOperation] = useState(mockOperations[0])
-  const geminiStarted = useRef(false)
-  const geminiDone = useRef(false)
 
-  const totalStages = stages.length
-  const progress = Math.min(100, (currentStage / totalStages) * 100)
-  const reportId = sessionId ?? 'demo'
+  const total = stages.length
+  const pct = Math.round((currentStage / total) * 100)
+  const reportPath = `/app/report/${sessionId ?? 'demo'}`
 
-  // Safety timeout
+  // Simple timer: advance one stage every 1.5s
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!isComplete && !error) setIsTimedOut(true)
-    }, MAX_PROCESSING_TIME_MS)
-    return () => clearTimeout(timeout)
-  }, [isComplete, error])
-
-  // Gemini analysis
-  useEffect(() => {
-    if (!USE_GEMINI || !file || !genre || !analysisMode || geminiStarted.current) return
-    geminiStarted.current = true
-
-    analyzeWithGemini({
-      file,
-      genre,
-      mode: analysisMode,
-      onStageUpdate: (stage) => {
-        setCurrentOperation(stage)
-      },
-    })
-      .then((report) => {
-        if (geminiDone.current) return
-        geminiDone.current = true
-        report.sessionId = reportId
-        setReport(report)
-        setStages((prev) => prev.map((s) => ({ ...s, status: 'completed' as const })))
-        setCurrentStage(totalStages)
-        setCurrentOperation('Analysis complete!')
-        setIsComplete(true)
-      })
-      .catch((err) => {
-        if (geminiDone.current) return
-        geminiDone.current = true
-        setError(err instanceof Error ? err.message : 'Analysis failed')
-      })
-  }, [file, genre, analysisMode, reportId, setReport, totalStages])
-
-  // Animated stage progression
-  useEffect(() => {
-    if (isTimedOut || error || isComplete) return
-    if (currentStage >= totalStages) {
-      // In mock mode, completing stages means we're done
-      // In Gemini mode, if Gemini already finished, we're done too
-      if (!USE_GEMINI || geminiDone.current) {
-        setIsComplete(true)
-      }
-      // If Gemini mode and not done yet, just wait - the Gemini .then() will handle it
+    if (done) return
+    if (currentStage >= total) {
+      setDone(true)
       return
     }
+    const id = setTimeout(() => {
+      setStages(prev => prev.map((s, i) =>
+        i === currentStage ? { ...s, status: 'completed' as const } :
+        i === currentStage + 1 ? { ...s, status: 'active' as const } : s
+      ))
+      setCurrentStage(n => n + 1)
+    }, 1500)
+    return () => clearTimeout(id)
+  }, [currentStage, total, done])
 
-    const delay = USE_GEMINI
-      ? 2500 + Math.random() * 2000
-      : 1200 + Math.random() * 800
-
-    const timer = setTimeout(() => {
-      if (geminiDone.current && USE_GEMINI) {
-        // Gemini finished while we were animating - jump to complete
-        setStages((prev) => prev.map((s) => ({ ...s, status: 'completed' as const })))
-        setCurrentStage(totalStages)
-        setCurrentOperation('Analysis complete!')
-        setIsComplete(true)
-        return
-      }
-      setStages((prev) =>
-        prev.map((s, i) =>
-          i === currentStage ? { ...s, status: 'completed' as const } :
-          i === currentStage + 1 ? { ...s, status: 'active' as const } : s
-        )
-      )
-      setCurrentStage((prev) => prev + 1)
-      if (!USE_GEMINI) {
-        setCurrentOperation(mockOperations[Math.min(currentStage + 1, mockOperations.length - 1)])
-      }
-    }, delay)
-
-    return () => clearTimeout(timer)
-  }, [currentStage, totalStages, isTimedOut, error, isComplete])
-
-  // Auto-redirect after completion
+  // Countdown then navigate
   useEffect(() => {
-    if (!isComplete) return
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          navigate(`/app/report/${reportId}`)
+    if (!done) return
+    const id = setInterval(() => {
+      setCountdown(n => {
+        if (n <= 1) {
+          clearInterval(id)
+          navigate(reportPath)
           return 0
         }
-        return prev - 1
+        return n - 1
       })
     }, 1000)
-    return () => clearInterval(timer)
-  }, [isComplete, navigate, reportId])
+    return () => clearInterval(id)
+  }, [done, navigate, reportPath])
 
-  const handleRetry = useCallback(() => {
-    setIsTimedOut(false)
-    setError(null)
-    setIsComplete(false)
-    setCurrentStage(0)
-    setCountdown(3)
-    setCurrentOperation(mockOperations[0])
-    setStages(mockStatusStages.stages)
-    geminiStarted.current = false
-    geminiDone.current = false
-  }, [])
-
-  const handleSkipToReport = useCallback(() => {
-    navigate(`/app/report/${reportId}`)
-  }, [navigate, reportId])
+  const goToReport = useCallback(() => navigate(reportPath), [navigate, reportPath])
 
   return (
     <PageTransition>
@@ -164,78 +80,48 @@ export default function Processing() {
         </h1>
 
         <div className="flex flex-wrap items-center gap-2 mb-8">
-          <span className="text-sm text-text-secondary font-body truncate max-w-[200px]">{file?.name ?? 'Demo Track'}</span>
+          <span className="text-sm text-text-secondary font-body truncate max-w-[200px]">
+            {file?.name ?? 'Demo Track'}
+          </span>
           <Badge variant="cyan">{genre ?? 'techno'}</Badge>
           <Badge variant="purple">{analysisMode ?? 'both'}</Badge>
         </div>
 
-        {error ? (
-          <div className="glass-card p-8 text-center space-y-4">
-            <p className="text-accent-red font-display font-semibold">Analysis Failed</p>
-            <p className="text-sm text-text-secondary">{error}</p>
-            <div className="flex justify-center gap-3">
-              <Button variant="outline" size="md" onClick={handleRetry}>
-                Retry
-              </Button>
-              <Button variant="primary" size="md" onClick={handleSkipToReport}>
-                View Demo Report
-              </Button>
-            </div>
-          </div>
-        ) : isTimedOut ? (
-          <div className="glass-card p-8 text-center space-y-4">
-            <p className="text-accent-red font-display font-semibold">Processing Timed Out</p>
-            <p className="text-sm text-text-secondary">
-              The analysis is taking longer than expected.
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button variant="outline" size="md" onClick={handleRetry}>
-                Retry
-              </Button>
-              <Button variant="primary" size="md" onClick={handleSkipToReport}>
-                View Demo Report
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <ProcessingPipeline stages={stages} currentStage={currentStage} />
+        <ProcessingPipeline stages={stages} currentStage={currentStage} />
 
-            <div className="mt-8 space-y-3">
-              <Progress value={progress} showLabel />
-              <p className="text-xs text-text-secondary font-mono">
-                {currentOperation}
+        <div className="mt-8 space-y-3">
+          <Progress value={pct} showLabel />
+          <p className="text-xs text-text-secondary font-mono">
+            {currentStage < total ? operations[currentStage] ?? 'Processing...' : 'Analysis complete!'}
+          </p>
+        </div>
+
+        {/* Skip button after a few stages */}
+        {!done && currentStage >= 2 && (
+          <div className="mt-6 text-center">
+            <Button variant="muted" size="sm" onClick={goToReport}>
+              Skip to report
+            </Button>
+          </div>
+        )}
+
+        {done && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 space-y-6"
+          >
+            <DeletionReceipt receipt={mockDeletionReceipt} />
+            <div className="text-center space-y-2">
+              <p className="text-sm text-text-secondary">
+                Redirecting to your report in{' '}
+                <span className="font-mono text-accent-cyan">{countdown}s</span>
               </p>
+              <Button variant="outline" size="sm" onClick={goToReport}>
+                Go to Report Now
+              </Button>
             </div>
-
-            {/* Skip button always visible after 10 seconds */}
-            {!isComplete && currentStage > 2 && (
-              <div className="mt-6 text-center">
-                <Button variant="muted" size="sm" onClick={handleSkipToReport}>
-                  Skip to demo report
-                </Button>
-              </div>
-            )}
-
-            {isComplete && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-8 space-y-6"
-              >
-                <DeletionReceipt receipt={mockDeletionReceipt} />
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-text-secondary">
-                    Redirecting to your report in{' '}
-                    <span className="font-mono text-accent-cyan">{countdown}s</span>
-                  </p>
-                  <Button variant="outline" size="sm" onClick={handleSkipToReport}>
-                    Go to Report Now
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </>
+          </motion.div>
         )}
       </div>
     </PageTransition>

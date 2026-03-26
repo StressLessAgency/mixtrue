@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
 import AppShell from './components/layout/AppShell'
 import { useAuthStore } from './stores/useAuthStore'
 
@@ -53,21 +52,19 @@ export default function App() {
   return (
     <div className="grain-overlay">
       <Suspense fallback={<PageLoader />}>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
-              <Route path="upload" element={<Upload />} />
-              <Route path="processing" element={<Processing />} />
-              <Route path="report/:sessionId" element={<Report />} />
-              <Route path="history" element={<History />} />
-            </Route>
-            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-          </Routes>
-        </AnimatePresence>
+        <Routes location={location}>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+            <Route path="upload" element={<Upload />} />
+            <Route path="processing" element={<Processing />} />
+            <Route path="report/:sessionId" element={<Report />} />
+            <Route path="history" element={<History />} />
+          </Route>
+          <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        </Routes>
       </Suspense>
     </div>
   )
