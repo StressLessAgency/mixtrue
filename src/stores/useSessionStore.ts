@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GenreMode, AnalysisMode, ProcessingStage } from '@/types/analysis'
+import type { GenreMode, AnalysisMode, ProcessingStage, ReportData } from '@/types/analysis'
 
 interface SessionState {
   genre: GenreMode | null
@@ -12,6 +12,7 @@ interface SessionState {
   currentStage: number
   progress: number
   currentOperation: string
+  report: ReportData | null
 
   setGenre: (genre: GenreMode) => void
   setAnalysisMode: (mode: AnalysisMode) => void
@@ -21,6 +22,7 @@ interface SessionState {
   setProcessing: (isProcessing: boolean) => void
   updateProcessingStage: (stage: number, progress: number, operation: string) => void
   setProcessingStages: (stages: ProcessingStage[]) => void
+  setReport: (report: ReportData | null) => void
   reset: () => void
 }
 
@@ -35,6 +37,7 @@ const initialState = {
   currentStage: 0,
   progress: 0,
   currentOperation: '',
+  report: null,
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
@@ -48,5 +51,6 @@ export const useSessionStore = create<SessionState>((set) => ({
   updateProcessingStage: (stage, progress, operation) =>
     set({ currentStage: stage, progress, currentOperation: operation }),
   setProcessingStages: (stages) => set({ processingStages: stages }),
+  setReport: (report) => set({ report }),
   reset: () => set(initialState),
 }))

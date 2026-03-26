@@ -17,12 +17,14 @@ import ClubReadinessTab from '@/components/report/tabs/ClubReadinessTab'
 import MasterTab from '@/components/report/tabs/MasterTab'
 import AIFixesTab from '@/components/report/tabs/AIFixesTab'
 import { useFeatureGate } from '@/hooks/useFeatureGate'
+import { useSessionStore } from '@/stores/useSessionStore'
 import { analysisApi } from '@/services/analysisApi'
 import { exportReportPdf } from '@/services/pdfExport'
 import type { ReportData } from '@/types/analysis'
 
 export default function Report() {
   const { sessionId } = useParams<{ sessionId: string }>()
+  const storedReport = useSessionStore((s) => s.report)
   const [report, setReport] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,12 +33,19 @@ export default function Report() {
 
   const fetchReport = useCallback((signal?: AbortSignal) => {
     if (!sessionId) return
+
+    // Use stored report from Gemini analysis if available and matching
+    if (storedReport && storedReport.sessionId === sessionId) {
+      setReport(storedReport)
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     const reportPromise = analysisApi.getReport(sessionId)
 
-    // If an abort signal is provided, race against it
     const abortPromise = signal
       ? new Promise<never>((_, reject) => {
           signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
@@ -52,7 +61,7 @@ export default function Report() {
         setError(err instanceof Error ? err.message : 'Failed to load report')
       })
       .finally(() => setLoading(false))
-  }, [sessionId])
+  }, [sessionId, storedReport])
 
   useEffect(() => {
     const controller = new AbortController()
