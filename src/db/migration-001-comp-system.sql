@@ -78,3 +78,24 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Then uncomment and run:
 -- SELECT cron.schedule('expire-timed-comps', '0 0 * * *', 'SELECT expire_timed_comps()');
 -- SELECT cron.schedule('reset-monthly-analyses', '0 0 1 * *', 'SELECT reset_monthly_analyses()');
+
+-- 8. Ensure admins always have legendary lifetime access
+CREATE OR REPLACE FUNCTION ensure_admin_legendary()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.role = 'admin' AND (NEW.plan != 'legendary' OR NEW.comp_type != 'lifetime') THEN
+    NEW.plan := 'legendary';
+    NEW.comp_type := 'lifetime';
+    NEW.comp_expires_at := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_profile_admin_update
+  BEFORE INSERT OR UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION ensure_admin_legendary();
+
+-- 9. Promote your account to admin (legendary lifetime)
+-- Replace with your actual email:
+-- UPDATE profiles SET role = 'admin' WHERE email = 'bryan@stressfreerecords.com';

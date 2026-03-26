@@ -3,12 +3,13 @@ import { Upload, History, CreditCard, Shield, Activity, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 
-const navItems = [
+const baseNavItems = [
   { path: '/app/upload', label: 'Upload', icon: Upload },
   { path: '/app/history', label: 'History', icon: History },
   { path: '/pricing', label: 'Pricing', icon: CreditCard },
-  { path: '/admin', label: 'Admin', icon: Shield },
 ]
+
+const adminNavItem = { path: '/admin', label: 'Admin', icon: Shield }
 
 interface SidebarProps {
   open?: boolean
@@ -18,7 +19,9 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
+  const isAdmin = user?.role === 'admin'
   const isPaid = user?.plan === 'pro' || user?.plan === 'legendary'
+  const navItems = isAdmin ? [...baseNavItems, adminNavItem] : baseNavItems
   const used = user?.analyses_this_month ?? 0
   const limit = isPaid ? 99 : 3
   const pct = Math.min((used / limit) * 100, 100)

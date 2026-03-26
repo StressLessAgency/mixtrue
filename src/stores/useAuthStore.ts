@@ -19,7 +19,7 @@ interface AuthState {
   signUpWithEmail: (email: string, password: string, fullName: string) => Promise<void>
 }
 
-function profileFromUser(user: User): Profile {
+function fallbackProfile(user: User): Profile {
   return {
     id: user.id,
     email: user.email ?? '',
@@ -29,6 +29,34 @@ function profileFromUser(user: User): Profile {
     stripe_customer_id: null,
     analyses_this_month: 0,
     created_at: user.created_at,
+  }
+}
+
+async function fetchProfile(user: User): Promise<Profile> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error || !data) return fallbackProfile(user)
+
+    return {
+      id: data.id,
+      email: data.email ?? user.email ?? '',
+      full_name: data.full_name ?? user.user_metadata?.full_name ?? null,
+      role: data.role ?? 'user',
+      plan: data.plan ?? 'free',
+      comp_type: data.comp_type ?? 'none',
+      comp_expires_at: data.comp_expires_at ?? null,
+      comp_granted_by: data.comp_granted_by ?? null,
+      stripe_customer_id: data.stripe_customer_id ?? null,
+      analyses_this_month: data.analyses_this_month ?? 0,
+      created_at: data.created_at ?? user.created_at,
+    }
+  } catch {
+    return fallbackProfile(user)
   }
 }
 
@@ -46,7 +74,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const profile = profileFromUser(session.user)
+        const profile = await fetchProfile(session.user)
         set({ user: profile, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
       } else {
         set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
@@ -55,9 +83,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
     }
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const profile = profileFromUser(session.user)
+        const profile = await fetchProfile(session.user)
         set({ user: profile, supabaseUser: session.user, isAuthenticated: true })
       } else {
         set({ user: null, supabaseUser: null, isAuthenticated: false })

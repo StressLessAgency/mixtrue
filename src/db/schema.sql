@@ -196,3 +196,29 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Run this AFTER enabling pg_cron extension:
 -- SELECT cron.schedule('reset-monthly-analyses', '0 0 1 * *', 'SELECT reset_monthly_analyses()');
+
+-- ========== Promote user to admin (legendary lifetime) ==========
+-- Run this to make a user an admin with legendary lifetime status.
+-- Replace 'your@email.com' with the actual admin email.
+--
+-- UPDATE profiles
+-- SET role = 'admin', plan = 'legendary', comp_type = 'lifetime', comp_expires_at = NULL
+-- WHERE email = 'your@email.com';
+
+-- ========== Ensure admins always have legendary access ==========
+-- Trigger: when role is set to 'admin', auto-set plan to legendary lifetime
+CREATE OR REPLACE FUNCTION ensure_admin_legendary()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.role = 'admin' AND (NEW.plan != 'legendary' OR NEW.comp_type != 'lifetime') THEN
+    NEW.plan := 'legendary';
+    NEW.comp_type := 'lifetime';
+    NEW.comp_expires_at := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_profile_admin_update
+  BEFORE INSERT OR UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION ensure_admin_legendary();
