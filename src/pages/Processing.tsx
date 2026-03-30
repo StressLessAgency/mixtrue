@@ -37,8 +37,9 @@ export default function Processing() {
   const [stages, setStages] = useState<ProcessingStage[]>(
     mockStatusStages.stages.map((s, i) => i === 0 ? { ...s, status: 'active' as const } : s)
   )
-  const [done, setDone] = useState(false)
-  const [error, _setError] = useState<string | null>(null)
+  const [geminiDone, setGeminiDone] = useState(false)
+  const [animationDone, setAnimationDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(3)
   const geminiLaunched = useRef(false)
 
@@ -46,7 +47,11 @@ export default function Processing() {
   const pct = Math.round((currentStage / total) * 100)
   const reportPath = `/app/report/${sessionId ?? 'demo'}`
 
-  // Launch Gemini analysis in background (fire and forget - animation runs independently)
+  // In mock mode (no Gemini), "done" = animation complete
+  // In Gemini mode, "done" = BOTH animation complete AND Gemini complete
+  const allDone = HAS_GEMINI ? (geminiDone && animationDone) : animationDone
+
+  // Launch Gemini analysis
   useEffect(() => {
     if (!HAS_GEMINI || !file || !genre || !analysisMode || geminiLaunched.current) return
     geminiLaunched.current = true
@@ -54,9 +59,9 @@ export default function Processing() {
     analyzeWithGemini({ file, genre, mode: analysisMode })
       .then((report) => {
         report.sessionId = sessionId ?? 'demo'
-        console.log('[mixtrue] Gemini analysis complete, setting report in store')
+        console.log('[mixtrue] Gemini complete:', report.trackName)
         setReport(report)
-        // Save to Supabase for history + increment analysis count
+        setGeminiDone(true)
         if (userId) {
           analysisApi.saveReport(report, userId)
           analysisApi.incrementAnalysisCount(userId)
@@ -65,17 +70,21 @@ export default function Processing() {
       .catch((err) => {
         console.error('[mixtrue] Gemini failed:', err)
         toast.error(`Analysis error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        setError(err instanceof Error ? err.message : 'Analysis failed')
       })
   }, [file, genre, analysisMode, sessionId, setReport, userId])
 
-  // Stage animation timer - always runs regardless of Gemini
+  // Stage animation
   useEffect(() => {
-    if (done || error) return
+    if (animationDone || error) return
     if (currentStage >= total) {
-      setDone(true)
+      setAnimationDone(true)
       return
     }
-    const delay = HAS_GEMINI ? 4000 : 1500
+    // Gemini mode: if animation finishes before Gemini, slow down the last few stages
+    const isNearEnd = HAS_GEMINI && currentStage >= total - 2 && !geminiDone
+    const delay = isNearEnd ? 8000 : (HAS_GEMINI ? 4000 : 1500)
+
     const id = setTimeout(() => {
       setStages(prev => prev.map((s, i) =>
         i === currentStage ? { ...s, status: 'completed' as const } :
@@ -84,11 +93,20 @@ export default function Processing() {
       setCurrentStage(n => n + 1)
     }, delay)
     return () => clearTimeout(id)
-  }, [currentStage, total, done, error])
+  }, [currentStage, total, animationDone, error, geminiDone])
 
-  // Countdown then navigate
+  // When Gemini finishes and animation is still going, jump to complete
   useEffect(() => {
-    if (!done) return
+    if (geminiDone && !animationDone) {
+      setStages(prev => prev.map(s => ({ ...s, status: 'completed' as const })))
+      setCurrentStage(total)
+      setAnimationDone(true)
+    }
+  }, [geminiDone, animationDone, total])
+
+  // Countdown then navigate - only when ALL done
+  useEffect(() => {
+    if (!allDone) return
     const id = setInterval(() => {
       setCountdown(n => {
         if (n <= 1) {
@@ -100,7 +118,7 @@ export default function Processing() {
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [done, navigate, reportPath])
+  }, [allDone, navigate, reportPath])
 
   const goToReport = useCallback(() => navigate(reportPath), [navigate, reportPath])
 
@@ -132,11 +150,12 @@ export default function Processing() {
             <div className="mt-8 space-y-3">
               <Progress value={pct} showLabel />
               <p className="text-xs text-text-secondary font-mono">
-                {currentStage < total ? operations[currentStage] ?? 'Processing...' : 'Analysis complete!'}
+                {currentStage < total ? operations[currentStage] ?? 'Processing...' :
+                  geminiDone ? 'Analysis complete!' : 'Finalizing analysis...'}
               </p>
             </div>
 
-            {!done && currentStage >= 2 && (
+            {!allDone && currentStage >= 2 && (
               <div className="mt-6 text-center">
                 <Button variant="muted" size="sm" onClick={goToReport}>
                   Skip to report
@@ -144,7 +163,7 @@ export default function Processing() {
               </div>
             )}
 
-            {done && (
+            {allDone && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
