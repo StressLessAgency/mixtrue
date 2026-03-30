@@ -226,7 +226,12 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
   const { file, genre, mode, onStageUpdate } = options
 
   const client = getClient()
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  const model = client.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    generationConfig: {
+      responseMimeType: 'application/json',
+    },
+  })
 
   onStageUpdate?.('Converting audio for analysis...')
 
@@ -247,17 +252,27 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
 
   const responseText = result.response.text()
 
-  // Strip potential markdown code fences
-  const jsonStr = responseText
-    .replace(/^```(?:json)?\s*/m, '')
-    .replace(/```\s*$/m, '')
-    .trim()
+  // Extract JSON from the response - handle code fences, surrounding text, etc.
+  let jsonStr = responseText.trim()
+
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  const fenceMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/)
+  if (fenceMatch) {
+    jsonStr = fenceMatch[1].trim()
+  } else {
+    // Try to find the JSON object directly (starts with { ends with })
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0]
+    }
+  }
 
   let parsed: Record<string, unknown>
   try {
     parsed = JSON.parse(jsonStr)
-  } catch {
-    throw new Error('Failed to parse analysis response. Please try again.')
+  } catch (e) {
+    console.error('[mixtrue] JSON parse failed. Response start:', jsonStr.substring(0, 200))
+    throw new Error(`Failed to parse analysis response. Response started with: "${jsonStr.substring(0, 80)}..."`)
   }
 
   // Attach session metadata
