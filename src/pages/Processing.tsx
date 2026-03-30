@@ -33,6 +33,7 @@ export default function Processing() {
   const navigate = useNavigate()
   const { genre, analysisMode, file, sessionId, setReport } = useSessionStore()
   const userId = useAuthStore((s) => s.user?.id)
+  const { user: authUser, setUser: setAuthUser } = useAuthStore()
   const [currentStage, setCurrentStage] = useState(0)
   const [stages, setStages] = useState<ProcessingStage[]>(
     mockStatusStages.stages.map((s, i) => i === 0 ? { ...s, status: 'active' as const } : s)
@@ -65,6 +66,10 @@ export default function Processing() {
         if (userId) {
           analysisApi.saveReport(report, userId)
           analysisApi.incrementAnalysisCount(userId)
+          // Update sidebar count immediately without waiting for Supabase
+          if (authUser) {
+            setAuthUser({ ...authUser, analyses_this_month: (authUser.analyses_this_month ?? 0) + 1 })
+          }
         }
       })
       .catch((err) => {

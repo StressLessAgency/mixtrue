@@ -148,7 +148,56 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
     ],
     "metrics": [
       { "name": "<metric name>", "score": <0-100>, "verdict": "<short verdict>", "description": "<description>" }
-    ]
+    ],
+    "arrangement": {
+      "sections": [
+        {
+          "label": "<section label e.g. Intro, Drop 1, Breakdown, Build, Outro>",
+          "startTime": <seconds float>,
+          "endTime": <seconds float>,
+          "energyLevel": <0-1 float>,
+          "verdict": "strong" | "needs-work" | "weak",
+          "feedback": "<specific feedback on this section>",
+          "recommendations": ["<recommendation 1>", "<recommendation 2>"],
+          "transitionQuality": <0-100>,
+          "transitionFeedback": "<feedback on transition into next section>"
+        }
+      ],
+      "overallStructureScore": <0-100>,
+      "structureVerdict": "<overall verdict on the song structure>",
+      "genreStructureComparison": "<how this track's structure compares to typical ${genre} tracks>",
+      "sectionLengthAnalysis": [
+        { "section": "<section name>", "bars": <integer>, "ideal": "<ideal bar range for genre>", "verdict": "<ok/too-short/too-long>" }
+      ],
+      "insights": [
+        { "title": "<insight title>", "explanation": "<explanation>", "recommendation": "<what to do>", "genreNote": "<genre-specific note>" }
+      ]
+    },
+    "djPlayability": {
+      "overallScore": <0-100>,
+      "mixInScore": <0-100>,
+      "mixOutScore": <0-100>,
+      "introLength": { "bars": <integer>, "seconds": <float>, "verdict": "<too-short/ideal/too-long>", "recommendation": "<specific recommendation>" },
+      "outroLength": { "bars": <integer>, "seconds": <float>, "verdict": "<too-short/ideal/too-long>", "recommendation": "<specific recommendation>" },
+      "bpmStability": { "isStable": <boolean>, "variance": <bpm float variance>, "verdict": "<stable/drifting/unstable>" },
+      "keyCompatibility": {
+        "key": "<musical key>",
+        "camelot": "<camelot code>",
+        "compatibleKeys": ["<key 1>", "<key 2>", "<key 3>"],
+        "energyBoostKeys": ["<key 1>", "<key 2>"]
+      },
+      "beatgridFriendly": <boolean>,
+      "firstBeatClarity": { "score": <0-100>, "verdict": "<clear/unclear/problematic>" },
+      "loopPoints": [
+        { "time": <seconds float>, "bars": <integer>, "quality": "excellent" | "good" | "fair" }
+      ],
+      "mixabilityIssues": [
+        { "issue": "<description of issue>", "severity": "critical" | "warning" | "advisory", "fix": "<how to fix>" }
+      ],
+      "insights": [
+        { "title": "<insight title>", "explanation": "<explanation>", "recommendation": "<what to do>", "genreNote": "<genre-specific note>" }
+      ]
+    }
   },
   "master": {
     "platformTargets": [
@@ -204,6 +253,8 @@ IMPORTANT GUIDELINES:
 - Generate 200 waveform data points spanning the track duration
 - Generate 500 goniometer data points
 - Generate energy flow data every 2 seconds across the track duration
+- Generate 4-8 arrangement sections based on actual song structure (Intro, Build, Drop, Breakdown, Outro etc - use genre-appropriate labels)
+- Generate 2-4 loop points at musically sensible positions
 - For ${genre} genre, use appropriate targets and reference values
 - Be honest and specific about issues detected
 - Provide actionable, professional-grade recommendations
