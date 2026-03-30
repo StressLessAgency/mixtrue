@@ -32,7 +32,7 @@ const mockOperations = [
 // Total ~55 s — leaves comfortable headroom for most real analysis times.
 const GEMINI_STAGE_DELAYS_MS = [3000, 5000, 8000, 12000, 16000, 20000, 25000, 32000]
 
-const MAX_PROCESSING_TIME_MS = 120_000
+const MAX_PROCESSING_TIME_MS = 300_000 // 5 minutes — allows time for large file uploads via Files API
 
 export default function Processing() {
   const navigate = useNavigate()
