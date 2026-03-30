@@ -8,6 +8,7 @@ interface SessionState {
   referenceFile: File | null
   sessionId: string | null
   isProcessing: boolean
+  isRealUpload: boolean
   processingStages: ProcessingStage[]
   currentStage: number
   progress: number
@@ -33,6 +34,7 @@ const initialState = {
   referenceFile: null,
   sessionId: null,
   isProcessing: false,
+  isRealUpload: false,
   processingStages: [],
   currentStage: 0,
   progress: 0,

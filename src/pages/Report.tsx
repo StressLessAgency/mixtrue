@@ -41,10 +41,12 @@ export default function Report() {
       return
     }
 
-    // If no stored report yet, wait up to 15s for Gemini to finish
-    // (it might still be processing in the background)
+    const isReal = useSessionStore.getState().isRealUpload
+
+    // For real uploads: wait up to 60s for Gemini to finish
+    // For demo/direct URL visits: fall back to mock data quickly
+    const maxAttempts = isReal ? 60 : 5
     let attempts = 0
-    const maxAttempts = 15
     const checkInterval = setInterval(() => {
       const current = useSessionStore.getState().report
       attempts++
@@ -56,11 +58,17 @@ export default function Report() {
       }
       if (attempts >= maxAttempts) {
         clearInterval(checkInterval)
-        // Fall back to mock data
-        analysisApi.getReport(sessionId)
-          .then(setReport)
-          .catch(() => setError('Report not available'))
-          .finally(() => setLoading(false))
+        if (isReal) {
+          // Real upload but Gemini didn't return - show error, NOT mock data
+          setError('Analysis is still processing. Please wait a moment and refresh.')
+          setLoading(false)
+        } else {
+          // Demo visit - show mock data
+          analysisApi.getReport(sessionId)
+            .then(setReport)
+            .catch(() => setError('Report not available'))
+            .finally(() => setLoading(false))
+        }
       }
     }, 1000)
 
@@ -79,18 +87,29 @@ export default function Report() {
   }, [fetchReport])
 
   if (loading) {
+    const isReal = useSessionStore.getState().isRealUpload
     return (
       <PageTransition>
         <div className="space-y-6">
-          <Skeleton className="h-12 w-64" />
-          <div className="flex gap-6">
-            <Skeleton className="h-40 w-40 rounded-full" />
-            <div className="space-y-3 flex-1">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-20 w-full" />
+          {isReal ? (
+            <div className="glass-card p-12 text-center space-y-4">
+              <div className="w-10 h-10 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="font-display font-semibold text-text-primary">Analyzing your track...</p>
+              <p className="text-sm text-text-secondary">This can take up to 60 seconds for a thorough analysis.</p>
             </div>
-          </div>
+          ) : (
+            <>
+              <Skeleton className="h-12 w-64" />
+              <div className="flex gap-6">
+                <Skeleton className="h-40 w-40 rounded-full" />
+                <div className="space-y-3 flex-1">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </PageTransition>
     )

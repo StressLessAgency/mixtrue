@@ -39,6 +39,7 @@ export default function Upload() {
     setFile(file)
     setReferenceFile(refFile)
     setSessionId(crypto.randomUUID())
+    useSessionStore.setState({ isRealUpload: true })
     navigate('/app/processing')
   }
 
