@@ -1,13 +1,23 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI, createUserContent, createPartFromUri } from '@google/genai'
 import type { ReportData, GenreMode, AnalysisMode } from '@/types/analysis'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
+
+// Files up to 100 MB can be sent inline as base64 (single request, fast).
+const GEMINI_INLINE_LIMIT_BYTES = 100 * 1024 * 1024 // 100 MB
+
+// Files between 100-125 MB use the Files API (resumable upload, then reference by URI).
+const GEMINI_FILE_API_LIMIT_BYTES = 125 * 1024 * 1024 // 125 MB
 
 function getClient() {
   if (!GEMINI_API_KEY) {
     throw new Error('Missing VITE_GEMINI_API_KEY environment variable')
   }
-  return new GoogleGenerativeAI(GEMINI_API_KEY)
+  return new GoogleGenAI({ apiKey: GEMINI_API_KEY })
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function fileToBase64(file: File): Promise<string> {
@@ -216,27 +226,68 @@ export interface GeminiAnalysisOptions {
 export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise<ReportData> {
   const { file, genre, mode, onStageUpdate } = options
 
-  const client = getClient()
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  // Validate file size
+  if (file.size > GEMINI_FILE_API_LIMIT_BYTES) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1)
+    throw new Error(
+      `File is ${sizeMb} MB — the maximum supported size is 125 MB. ` +
+      `Please export a lower-bitrate or shorter preview for analysis, or use a compressed format.`
+    )
+  }
 
-  onStageUpdate?.('Converting audio for analysis...')
-
-  const base64Audio = await fileToBase64(file)
+  const ai = getClient()
   const mimeType = getMimeType(file)
   const fileSizeMb = Math.round((file.size / (1024 * 1024)) * 10) / 10
+  const prompt = buildAnalysisPrompt(genre, mode, file.name, fileSizeMb)
+
+  let contentParts: Parameters<typeof createUserContent>[0]
+
+  if (file.size <= GEMINI_INLINE_LIMIT_BYTES) {
+    // --- Path 1: Inline base64 (files up to 100 MB) ---
+    onStageUpdate?.('Converting audio for analysis...')
+    const base64Audio = await fileToBase64(file)
+
+    contentParts = [
+      { inlineData: { data: base64Audio, mimeType } },
+      prompt,
+    ]
+  } else {
+    // --- Path 2: Files API upload (files 100-125 MB) ---
+    onStageUpdate?.('Uploading large file for processing...')
+
+    let uploaded = await ai.files.upload({
+      file,
+      config: { mimeType },
+    })
+
+    // Poll until the file is ready for use
+    onStageUpdate?.('Waiting for file processing...')
+    const pollStart = Date.now()
+    const POLL_TIMEOUT_MS = 300_000 // 5 minutes
+    while (uploaded.state?.toString() !== 'ACTIVE') {
+      if (Date.now() - pollStart > POLL_TIMEOUT_MS) {
+        throw new Error('File processing timed out. Please try again with a smaller file.')
+      }
+      await sleep(2000)
+      uploaded = await ai.files.get({ name: uploaded.name! })
+    }
+
+    contentParts = [
+      createPartFromUri(uploaded.uri!, uploaded.mimeType!),
+      prompt,
+    ]
+  }
 
   onStageUpdate?.('Sending audio to Gemini AI for analysis...')
 
-  const prompt = buildAnalysisPrompt(genre, mode, file.name, fileSizeMb)
-
-  const result = await model.generateContent([
-    { inlineData: { data: base64Audio, mimeType } },
-    { text: prompt },
-  ])
+  const result = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: createUserContent(contentParts),
+  })
 
   onStageUpdate?.('Processing AI analysis results...')
 
-  const responseText = result.response.text()
+  const responseText = result.text ?? ''
 
   // Strip potential markdown code fences
   const jsonStr = responseText
