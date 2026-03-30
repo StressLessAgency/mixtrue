@@ -65,7 +65,7 @@ export default function Processing() {
         console.error('[mixtrue] Gemini failed:', err)
         toast.error(`Analysis error: ${err instanceof Error ? err.message : 'Unknown error'}`)
       })
-  }, [file, genre, analysisMode, sessionId, setReport])
+  }, [file, genre, analysisMode, sessionId, setReport, userId])
 
   // Stage animation timer - always runs regardless of Gemini
   useEffect(() => {
