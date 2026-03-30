@@ -9,8 +9,10 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSessionStore } from '@/stores/useSessionStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { mockStatusStages, mockDeletionReceipt } from '@/services/mockData'
 import { analyzeWithGemini } from '@/services/geminiApi'
+import { analysisApi } from '@/services/analysisApi'
 import type { ProcessingStage } from '@/types/analysis'
 
 const HAS_GEMINI = !!import.meta.env.VITE_GEMINI_API_KEY
@@ -30,6 +32,7 @@ const operations = [
 export default function Processing() {
   const navigate = useNavigate()
   const { genre, analysisMode, file, sessionId, setReport } = useSessionStore()
+  const userId = useAuthStore((s) => s.user?.id)
   const [currentStage, setCurrentStage] = useState(0)
   const [stages, setStages] = useState<ProcessingStage[]>(
     mockStatusStages.stages.map((s, i) => i === 0 ? { ...s, status: 'active' as const } : s)
@@ -53,6 +56,8 @@ export default function Processing() {
         report.sessionId = sessionId ?? 'demo'
         setReport(report)
         console.log('[mixtrue] Gemini analysis complete')
+        // Save to Supabase for history
+        analysisApi.saveReport(report, userId ?? undefined)
       })
       .catch((err) => {
         console.error('[mixtrue] Gemini failed:', err)

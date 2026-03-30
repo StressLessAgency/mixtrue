@@ -41,39 +41,46 @@ export default function Report() {
       return
     }
 
-    const isReal = useSessionStore.getState().isRealUpload
-
-    // For real uploads: wait up to 60s for Gemini to finish
-    // For demo/direct URL visits: fall back to mock data quickly
-    const maxAttempts = isReal ? 60 : 5
-    let attempts = 0
-    const checkInterval = setInterval(() => {
-      const current = useSessionStore.getState().report
-      attempts++
-      if (current && current.sessionId === sessionId) {
-        clearInterval(checkInterval)
-        setReport(current)
+    // Try loading from Supabase (for history/saved reports)
+    analysisApi.getSavedReport(sessionId).then((saved) => {
+      if (saved) {
+        setReport(saved)
         setLoading(false)
         return
       }
-      if (attempts >= maxAttempts) {
-        clearInterval(checkInterval)
-        if (isReal) {
-          // Real upload but Gemini didn't return - show error, NOT mock data
-          setError('Analysis is still processing. Please wait a moment and refresh.')
-          setLoading(false)
-        } else {
-          // Demo visit - show mock data
-          analysisApi.getReport(sessionId)
-            .then(setReport)
-            .catch(() => setError('Report not available'))
-            .finally(() => setLoading(false))
-        }
-      }
-    }, 1000)
+      startPolling()
+    }).catch(() => startPolling())
 
-    if (signal) {
-      signal.addEventListener('abort', () => clearInterval(checkInterval))
+    function startPolling() {
+      const isReal = useSessionStore.getState().isRealUpload
+      const maxAttempts = isReal ? 60 : 5
+      let attempts = 0
+      const checkInterval = setInterval(() => {
+        const current = useSessionStore.getState().report
+        attempts++
+        if (current && current.sessionId === sessionId) {
+          clearInterval(checkInterval)
+          setReport(current)
+          setLoading(false)
+          return
+        }
+        if (attempts >= maxAttempts) {
+          clearInterval(checkInterval)
+          if (isReal) {
+            setError('Analysis is still processing. Please wait a moment and refresh.')
+            setLoading(false)
+          } else {
+            analysisApi.getReport(sessionId!)
+              .then(setReport)
+              .catch(() => setError('Report not available'))
+              .finally(() => setLoading(false))
+          }
+        }
+      }, 1000)
+
+      if (signal) {
+        signal.addEventListener('abort', () => clearInterval(checkInterval))
+      }
     }
 
     setLoading(true)
