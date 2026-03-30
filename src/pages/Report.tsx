@@ -31,6 +31,16 @@ export default function Report() {
   const [_activeTab, setActiveTab] = useState('overview')
   const gate = useFeatureGate()
 
+  // Reactively pick up Gemini result when it arrives in the store
+  useEffect(() => {
+    if (!loading || report) return
+    if (storedReport && storedReport.sessionId === sessionId) {
+      setReport(storedReport)
+      setLoading(false)
+      setError(null)
+    }
+  }, [storedReport, sessionId, loading, report])
+
   const fetchReport = useCallback((signal?: AbortSignal) => {
     if (!sessionId) return
 
