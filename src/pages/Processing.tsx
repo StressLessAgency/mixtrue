@@ -54,11 +54,12 @@ export default function Processing() {
     analyzeWithGemini({ file, genre, mode: analysisMode })
       .then((report) => {
         report.sessionId = sessionId ?? 'demo'
+        console.log('[mixtrue] Gemini analysis complete, setting report in store')
         setReport(report)
-        console.log('[mixtrue] Gemini analysis complete')
-        // Save to Supabase for history
+        // Save to Supabase for history + increment analysis count
         if (userId) {
           analysisApi.saveReport(report, userId)
+          analysisApi.incrementAnalysisCount(userId)
         }
       })
       .catch((err) => {

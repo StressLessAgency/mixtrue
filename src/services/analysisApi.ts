@@ -124,4 +124,31 @@ export const analysisApi = {
       return null
     }
   },
+
+  incrementAnalysisCount: async (userId: string): Promise<void> => {
+    try {
+      const headers = await getAuthHeader()
+      // Fetch current count
+      const res = await fetch(
+        `${REST_URL}/profiles?id=eq.${userId}&select=analyses_this_month`,
+        { headers }
+      )
+      if (!res.ok) return
+      const rows = await res.json()
+      const current = rows?.[0]?.analyses_this_month ?? 0
+
+      // Increment
+      await fetch(
+        `${REST_URL}/profiles?id=eq.${userId}`,
+        {
+          method: 'PATCH',
+          headers: { ...headers, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ analyses_this_month: current + 1 }),
+        }
+      )
+      console.log('[mixtrue] Analysis count incremented to', current + 1)
+    } catch (e) {
+      console.warn('[mixtrue] Failed to increment analysis count:', e)
+    }
+  },
 }

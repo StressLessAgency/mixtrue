@@ -34,9 +34,10 @@ export default function Report() {
 
   // 1. Reactively use stored report from Gemini (works even if it arrives late)
   useEffect(() => {
-    if (report) return // Already have a report, don't overwrite
+    console.log('[mixtrue] Report effect:', { hasReport: !!report, hasStoredReport: !!storedReport, storedTrack: storedReport?.trackName })
+    if (report) return
     if (storedReport) {
-      console.log('[mixtrue] Using stored report:', storedReport.trackName)
+      console.log('[mixtrue] Displaying report:', storedReport.trackName)
       setReport(storedReport)
       setLoading(false)
       setError(null)
