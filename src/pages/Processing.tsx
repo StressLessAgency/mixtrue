@@ -57,7 +57,9 @@ export default function Processing() {
         setReport(report)
         console.log('[mixtrue] Gemini analysis complete')
         // Save to Supabase for history
-        analysisApi.saveReport(report, userId ?? undefined)
+        if (userId) {
+          analysisApi.saveReport(report, userId)
+        }
       })
       .catch((err) => {
         console.error('[mixtrue] Gemini failed:', err)

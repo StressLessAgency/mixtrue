@@ -3,15 +3,23 @@ import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import AppShell from './components/layout/AppShell'
 import { useAuthStore } from './stores/useAuthStore'
 
-const Landing = lazy(() => import('./pages/Landing'))
-const Login = lazy(() => import('./pages/Login'))
-const Signup = lazy(() => import('./pages/Signup'))
-const Pricing = lazy(() => import('./pages/Pricing'))
-const Upload = lazy(() => import('./pages/Upload'))
-const Processing = lazy(() => import('./pages/Processing'))
-const Report = lazy(() => import('./pages/Report'))
-const History = lazy(() => import('./pages/History'))
-const Admin = lazy(() => import('./pages/Admin'))
+// Auto-retry on chunk load failure (happens after new deployments when browser has stale cache)
+function lazyRetry(fn: () => Promise<{ default: React.ComponentType }>) {
+  return lazy(() => fn().catch(() => {
+    window.location.reload()
+    return fn()
+  }))
+}
+
+const Landing = lazyRetry(() => import('./pages/Landing'))
+const Login = lazyRetry(() => import('./pages/Login'))
+const Signup = lazyRetry(() => import('./pages/Signup'))
+const Pricing = lazyRetry(() => import('./pages/Pricing'))
+const Upload = lazyRetry(() => import('./pages/Upload'))
+const Processing = lazyRetry(() => import('./pages/Processing'))
+const Report = lazyRetry(() => import('./pages/Report'))
+const History = lazyRetry(() => import('./pages/History'))
+const Admin = lazyRetry(() => import('./pages/Admin'))
 
 function PageLoader() {
   return (
