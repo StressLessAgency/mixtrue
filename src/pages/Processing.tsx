@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { useSessionStore } from '@/stores/useSessionStore'
 import { mockStatusStages, mockDeletionReceipt } from '@/services/mockData'
 import { analyzeWithGemini } from '@/services/geminiApi'
+import { saveReport } from '@/services/historyService'
 import type { ProcessingStage } from '@/types/analysis'
 
 const USE_GEMINI = !!import.meta.env.VITE_GEMINI_API_KEY
@@ -26,7 +27,14 @@ const mockOperations = [
   'Wiping temporary storage securely...',
 ]
 
-const MAX_PROCESSING_TIME_MS = 120_000
+// Gemini stage label → pipeline index mapping
+const GEMINI_STAGE_MAP: Record<string, number> = {
+  'Converting audio for analysis...': 0,
+  'Sending audio to Gemini AI for analysis...': 2,
+  'Processing AI analysis results...': 6,
+}
+
+const MAX_PROCESSING_TIME_MS = 300_000 // 5 minutes
 
 export default function Processing() {
   const navigate = useNavigate()
@@ -43,7 +51,9 @@ export default function Processing() {
   const totalStages = stages.length
   const progress = Math.min(100, (currentStage / totalStages) * 100)
 
-  const reportId = sessionId ?? 'demo'
+  // Use the sessionId that was set in Upload, or fall back to a stable ref
+  const reportIdRef = useRef(sessionId ?? crypto.randomUUID())
+  const reportId = reportIdRef.current
 
   // Safety timeout
   useEffect(() => {
@@ -60,25 +70,21 @@ export default function Processing() {
     if (!USE_GEMINI || !file || !genre || !analysisMode || geminiStarted.current) return
     geminiStarted.current = true
 
-    const stageLabels: Record<string, number> = {
-      'Converting audio for analysis...': 0,
-      'Sending audio to Gemini AI for analysis...': 2,
-      'Processing AI analysis results...': 6,
-    }
-
     analyzeWithGemini({
       file,
       genre,
       mode: analysisMode,
       onStageUpdate: (stage) => {
         setCurrentOperation(stage)
-        const targetStage = stageLabels[stage]
+        const targetStage = GEMINI_STAGE_MAP[stage]
         if (targetStage !== undefined) {
-          // Advance stages up to the target
           setStages((prev) =>
             prev.map((s, i) =>
-              i < targetStage ? { ...s, status: 'completed' as const } :
-              i === targetStage ? { ...s, status: 'active' as const } : s
+              i < targetStage
+                ? { ...s, status: 'completed' as const }
+                : i === targetStage
+                ? { ...s, status: 'active' as const }
+                : s
             )
           )
           setCurrentStage(targetStage)
@@ -86,9 +92,10 @@ export default function Processing() {
       },
     })
       .then((report) => {
+        // Ensure the report carries the same sessionId used in the URL
         report.sessionId = reportId
         setReport(report)
-        // Complete all stages
+        saveReport(report)  // ← persist to localStorage history
         setStages((prev) => prev.map((s) => ({ ...s, status: 'completed' as const })))
         setCurrentStage(totalStages)
         setCurrentOperation('Analysis complete!')
@@ -99,27 +106,36 @@ export default function Processing() {
       })
   }, [file, genre, analysisMode, reportId, setReport, totalStages])
 
-  // Mock stage progression (only when not using Gemini)
+  // Mock stage progression with staggered delays (only when not using Gemini)
   useEffect(() => {
     if (USE_GEMINI || isTimedOut || error) return
     if (currentStage >= totalStages) {
+      // Save a synthetic report entry so History works in demo mode too
+      const mockReport = useSessionStore.getState().report
+      if (mockReport) saveReport({ ...mockReport, sessionId: reportId })
       setIsComplete(true)
       return
     }
 
+    // Stagger: earlier stages faster, later stages slower
+    const baseDelay = 900 + currentStage * 120
+    const jitter = Math.random() * 600
     const timer = setTimeout(() => {
       setStages((prev) =>
         prev.map((s, i) =>
-          i === currentStage ? { ...s, status: 'completed' as const } :
-          i === currentStage + 1 ? { ...s, status: 'active' as const } : s
+          i === currentStage
+            ? { ...s, status: 'completed' as const }
+            : i === currentStage + 1
+            ? { ...s, status: 'active' as const }
+            : s
         )
       )
       setCurrentStage((prev) => prev + 1)
       setCurrentOperation(mockOperations[Math.min(currentStage + 1, mockOperations.length - 1)])
-    }, 1200 + Math.random() * 800)
+    }, baseDelay + jitter)
 
     return () => clearTimeout(timer)
-  }, [currentStage, totalStages, isTimedOut, error])
+  }, [currentStage, totalStages, isTimedOut, error, reportId])
 
   // Auto-redirect countdown after completion
   useEffect(() => {
