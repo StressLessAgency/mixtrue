@@ -20,6 +20,7 @@ import { useFeatureGate } from '@/hooks/useFeatureGate'
 import { useSessionStore } from '@/stores/useSessionStore'
 import { analysisApi } from '@/services/analysisApi'
 import { exportReportPdf } from '@/services/pdfExport'
+import { loadReportFromSession } from '@/services/historyService'
 import type { ReportData } from '@/types/analysis'
 
 export default function Report() {
@@ -28,19 +29,32 @@ export default function Report() {
   const [report, setReport] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [_activeTab, setActiveTab] = useState('overview')
+
+  // FIX: activeTab drives <Tabs value={...}> so that programmatic navigation works.
+  // Previously _activeTab was a disconnected local state that never reached the Tabs component.
+  const [activeTab, setActiveTab] = useState('overview')
+
   const gate = useFeatureGate()
 
   const fetchReport = useCallback((signal?: AbortSignal) => {
     if (!sessionId) return
 
-    // Use stored report from Gemini analysis if available and matching
+    // Priority 1: In-memory store from just-completed analysis (fastest, no I/O)
     if (storedReport && storedReport.sessionId === sessionId) {
       setReport(storedReport)
       setLoading(false)
       return
     }
 
+    // Priority 2: sessionStorage -- survives a page refresh within the same browser session
+    const sessionReport = loadReportFromSession(sessionId)
+    if (sessionReport) {
+      setReport(sessionReport)
+      setLoading(false)
+      return
+    }
+
+    // Priority 3: API fallback (returns mock data when Supabase is not configured)
     setLoading(true)
     setError(null)
 
@@ -48,11 +62,15 @@ export default function Report() {
 
     const abortPromise = signal
       ? new Promise<never>((_, reject) => {
-          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+          signal.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError'))
+          )
         })
       : null
 
-    const request = abortPromise ? Promise.race([reportPromise, abortPromise]) : reportPromise
+    const request = abortPromise
+      ? Promise.race([reportPromise, abortPromise])
+      : reportPromise
 
     request
       .then(setReport)
@@ -150,8 +168,11 @@ export default function Report() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="overview" onValueChange={setActiveTab}>
+        {/* FIX: Pass value={activeTab} so the Tabs component is in controlled mode.
+            onValueChange keeps activeTab in sync when the user clicks tabs manually.
+            onNavigateTab (from OverviewTab) calls setActiveTab, which updates activeTab,
+            which flows into value={activeTab}, which the Tabs component now respects. */}
+        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="frequency">Frequency</TabsTrigger>

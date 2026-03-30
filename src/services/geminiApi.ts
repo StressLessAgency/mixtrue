@@ -1,13 +1,22 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI, createUserContent, createPartFromUri } from '@google/genai'
 import type { ReportData, GenreMode, AnalysisMode } from '@/types/analysis'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
+
+// Files up to 100 MB can be sent inline as base64 (single request, fast).
+const GEMINI_INLINE_LIMIT_BYTES = 100 * 1024 * 1024 // 100 MB
+
+// Files between 100-125 MB use the Files API (resumable upload, then reference by URI).
+const GEMINI_FILE_API_LIMIT_BYTES = 125 * 1024 * 1024 // 125 MB
+
+// Processing timeout — longer for large file uploads via the Files API.
+const MAX_PROCESSING_TIME_MS = 300_000 // 5 minutes
 
 function getClient() {
   if (!GEMINI_API_KEY) {
     throw new Error('Missing VITE_GEMINI_API_KEY environment variable')
   }
-  return new GoogleGenerativeAI(GEMINI_API_KEY)
+  return new GoogleGenAI({ apiKey: GEMINI_API_KEY })
 }
 
 async function fileToBase64(file: File): Promise<string> {
@@ -38,6 +47,10 @@ function getMimeType(file: File): string {
     aif: 'audio/aiff',
   }
   return mimeMap[ext ?? ''] ?? 'audio/wav'
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function buildAnalysisPrompt(genre: GenreMode, mode: AnalysisMode, fileName: string, fileSizeMb: number): string {
@@ -209,36 +222,79 @@ export interface GeminiAnalysisOptions {
   file: File
   genre: GenreMode
   mode: AnalysisMode
+  /** The session ID to embed in the returned report. Avoids a UUID mismatch between
+   *  the store-generated ID (used for routing) and the report's internal ID. */
+  sessionId: string
   referenceFile?: File
   onStageUpdate?: (stage: string) => void
 }
 
 export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise<ReportData> {
-  const { file, genre, mode, onStageUpdate } = options
+  const { file, genre, mode, sessionId, onStageUpdate } = options
 
-  const client = getClient()
-  const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  // Validate file size
+  if (file.size > GEMINI_FILE_API_LIMIT_BYTES) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1)
+    throw new Error(
+      `File is ${sizeMb} MB — the maximum supported size is 125 MB. ` +
+      `Please export a lower-bitrate or shorter preview for analysis, or use a compressed format.`
+    )
+  }
 
-  onStageUpdate?.('Converting audio for analysis...')
-
-  const base64Audio = await fileToBase64(file)
+  const ai = getClient()
   const mimeType = getMimeType(file)
   const fileSizeMb = Math.round((file.size / (1024 * 1024)) * 10) / 10
+  const prompt = buildAnalysisPrompt(genre, mode, file.name, fileSizeMb)
+
+  let contentParts: Parameters<typeof createUserContent>[0]
+
+  if (file.size <= GEMINI_INLINE_LIMIT_BYTES) {
+    // --- Path 1: Inline base64 (files up to 100 MB) ---
+    onStageUpdate?.('Converting audio for analysis...')
+    const base64Audio = await fileToBase64(file)
+
+    contentParts = [
+      { inlineData: { data: base64Audio, mimeType } },
+      prompt,
+    ]
+  } else {
+    // --- Path 2: Files API upload (files 100-125 MB) ---
+    onStageUpdate?.('Uploading large file to Gemini Files API...')
+
+    let uploaded = await ai.files.upload({
+      file,
+      config: { mimeType },
+    })
+
+    // Poll until the file is ready for use
+    onStageUpdate?.('Waiting for file processing...')
+    const pollStart = Date.now()
+    while (uploaded.state?.toString() !== 'ACTIVE') {
+      if (Date.now() - pollStart > MAX_PROCESSING_TIME_MS) {
+        throw new Error('File processing timed out. Please try again with a smaller file.')
+      }
+      await sleep(2000)
+      uploaded = await ai.files.get({ name: uploaded.name! })
+    }
+
+    contentParts = [
+      createPartFromUri(uploaded.uri!, uploaded.mimeType!),
+      prompt,
+    ]
+  }
 
   onStageUpdate?.('Sending audio to Gemini AI for analysis...')
 
-  const prompt = buildAnalysisPrompt(genre, mode, file.name, fileSizeMb)
-
-  const result = await model.generateContent([
-    { inlineData: { data: base64Audio, mimeType } },
-    { text: prompt },
-  ])
+  const result = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: createUserContent(contentParts),
+  })
 
   onStageUpdate?.('Processing AI analysis results...')
 
-  const responseText = result.response.text()
+  const responseText = result.text ?? ''
 
-  // Strip potential markdown code fences
+  // Strip potential markdown code fences (Gemini sometimes wraps JSON despite instructions)
   const jsonStr = responseText
     .replace(/^```(?:json)?\s*/m, '')
     .replace(/```\s*$/m, '')
@@ -248,18 +304,25 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
   try {
     parsed = JSON.parse(jsonStr)
   } catch {
-    throw new Error('Failed to parse Gemini response as JSON. The AI returned an invalid format.')
+    throw new Error(
+      'Gemini returned a response that could not be parsed as JSON. ' +
+      'This can happen with very short audio clips or unsupported formats. ' +
+      'Try a WAV or FLAC file at least 30 seconds long.'
+    )
   }
 
-  // Attach session metadata
   const reportData = parsed as unknown as ReportData
-  reportData.sessionId = crypto.randomUUID()
+
+  // FIX: Use the caller-provided sessionId (the same one embedded in the URL)
+  // so that Report.tsx's storedReport.sessionId === sessionId check always passes.
+  reportData.sessionId = sessionId
   reportData.createdAt = new Date().toISOString()
   reportData.deletionReceipt = {
     receiptId: 'DEL-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
     fileName: file.name,
     deletedAt: new Date().toISOString(),
-    sessionId: reportData.sessionId,
+    // FIX: Use the canonical sessionId here too (was previously a different random UUID)
+    sessionId,
     storage: 'Ephemeral session — no disk',
     aiTraining: 'Opted out (default)',
   }
