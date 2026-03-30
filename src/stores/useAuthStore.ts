@@ -48,7 +48,6 @@ function profileFromUser(user: User, dbData?: Record<string, unknown> | null): P
 }
 
 async function loadProfile(user: User): Promise<Profile> {
-  // Try to fetch from Supabase with a short timeout
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
@@ -86,6 +85,9 @@ async function loadProfile(user: User): Promise<Profile> {
   }
 }
 
+// Track if we've already loaded the full profile to prevent overwrites
+let profileLoaded = false
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   supabaseUser: null,
@@ -100,11 +102,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        // Authenticate immediately with basic profile
-        const basic = profileFromUser(session.user)
-        set({ user: basic, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
-        // Then upgrade with real profile from DB
+        // Set basic profile to unblock UI
+        set({ user: profileFromUser(session.user), supabaseUser: session.user, isAuthenticated: true, isLoading: false })
+        // Fetch real profile
         const full = await loadProfile(session.user)
+        profileLoaded = true
         set({ user: full })
       } else {
         set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
@@ -113,14 +115,24 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
     }
 
-    supabase.auth.onAuthStateChange(async (_event, session) => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const basic = profileFromUser(session.user)
-        set({ user: basic, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
-        const full = await loadProfile(session.user)
-        set({ user: full })
+        // Only set fallback if we don't already have a loaded profile
+        if (!profileLoaded) {
+          set({ user: profileFromUser(session.user), supabaseUser: session.user, isAuthenticated: true, isLoading: false })
+        } else {
+          set({ supabaseUser: session.user, isAuthenticated: true, isLoading: false })
+        }
+
+        // Re-fetch profile on sign-in or token refresh, but not on INITIAL_SESSION
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || !profileLoaded) {
+          const full = await loadProfile(session.user)
+          profileLoaded = true
+          set({ user: full })
+        }
       } else {
-        set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
+        profileLoaded = false
+        set({ user: null, supabaseUser: null, isAuthenticated: false })
       }
     })
   },
@@ -136,6 +148,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signInWithEmail: async (email: string, password: string) => {
+    profileLoaded = false
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   },
@@ -150,6 +163,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    profileLoaded = false
     await supabase.auth.signOut()
     set({ user: null, supabaseUser: null, isAuthenticated: false })
   },
