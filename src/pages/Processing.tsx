@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 import PageTransition from '@/components/layout/PageTransition'
 import ProcessingPipeline from '@/components/processing/ProcessingPipeline'
 import DeletionReceipt from '@/components/processing/DeletionReceipt'
@@ -55,7 +56,7 @@ export default function Processing() {
       })
       .catch((err) => {
         console.error('[mixtrue] Gemini failed:', err)
-        // Don't block - mock report will be used as fallback
+        toast.error(`Analysis error: ${err instanceof Error ? err.message : 'Unknown error'}`)
       })
   }, [file, genre, analysisMode, sessionId, setReport])
 

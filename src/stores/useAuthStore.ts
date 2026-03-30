@@ -19,7 +19,22 @@ interface AuthState {
   signUpWithEmail: (email: string, password: string, fullName: string) => Promise<void>
 }
 
-function fallbackProfile(user: User): Profile {
+function profileFromUser(user: User, dbData?: Record<string, unknown> | null): Profile {
+  if (dbData) {
+    return {
+      id: String(dbData.id ?? user.id),
+      email: String(dbData.email ?? user.email ?? ''),
+      full_name: dbData.full_name as string | null ?? user.user_metadata?.full_name ?? null,
+      role: (dbData.role as 'user' | 'admin') ?? 'user',
+      plan: (dbData.plan as 'free' | 'pro' | 'legendary') ?? 'free',
+      comp_type: (dbData.comp_type as 'none' | 'lifetime' | 'timed') ?? 'none',
+      comp_expires_at: dbData.comp_expires_at as string | null ?? null,
+      comp_granted_by: dbData.comp_granted_by as string | null ?? null,
+      stripe_customer_id: dbData.stripe_customer_id as string | null ?? null,
+      analyses_this_month: (dbData.analyses_this_month as number) ?? 0,
+      created_at: String(dbData.created_at ?? user.created_at),
+    }
+  }
   return {
     id: user.id,
     email: user.email ?? '',
@@ -32,44 +47,42 @@ function fallbackProfile(user: User): Profile {
   }
 }
 
-async function fetchProfile(user: User): Promise<Profile> {
+async function loadProfile(user: User): Promise<Profile> {
+  // Try to fetch from Supabase with a short timeout
   try {
-    // Use select('*') to avoid column-not-found errors
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
 
-    // Log for debugging (visible in browser console)
-    if (error) {
-      console.warn('[mixtrue] Profile fetch error:', error.message, error.code)
-      return fallbackProfile(user)
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=*`,
+      {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      }
+    )
+
+    clearTimeout(timeout)
+
+    if (!response.ok) {
+      console.warn('[mixtrue] Profile API error:', response.status)
+      return profileFromUser(user)
     }
 
-    if (!data) {
-      console.warn('[mixtrue] No profile found for user:', user.id)
-      return fallbackProfile(user)
+    const rows = await response.json()
+    if (rows && rows.length > 0) {
+      console.log('[mixtrue] Profile loaded:', { role: rows[0].role, plan: rows[0].plan, email: rows[0].email })
+      return profileFromUser(user, rows[0])
     }
 
-    console.log('[mixtrue] Profile loaded:', { role: data.role, plan: data.plan, email: data.email })
-
-    return {
-      id: data.id,
-      email: data.email ?? user.email ?? '',
-      full_name: data.full_name ?? user.user_metadata?.full_name ?? null,
-      role: data.role ?? 'user',
-      plan: data.plan ?? 'free',
-      comp_type: data.comp_type ?? 'none',
-      comp_expires_at: data.comp_expires_at ?? null,
-      comp_granted_by: data.comp_granted_by ?? null,
-      stripe_customer_id: data.stripe_customer_id ?? null,
-      analyses_this_month: data.analyses_this_month ?? 0,
-      created_at: data.created_at ?? user.created_at,
-    }
+    console.warn('[mixtrue] No profile row found')
+    return profileFromUser(user)
   } catch (e) {
-    console.error('[mixtrue] Profile fetch exception:', e)
-    return fallbackProfile(user)
+    console.warn('[mixtrue] Profile fetch failed:', e instanceof Error ? e.message : e)
+    return profileFromUser(user)
   }
 }
 
@@ -87,10 +100,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const fb = fallbackProfile(session.user)
-        set({ user: fb, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
-        const profile = await fetchProfile(session.user)
-        set({ user: profile })
+        // Authenticate immediately with basic profile
+        const basic = profileFromUser(session.user)
+        set({ user: basic, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
+        // Then upgrade with real profile from DB
+        const full = await loadProfile(session.user)
+        set({ user: full })
       } else {
         set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
       }
@@ -100,10 +115,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const fb = fallbackProfile(session.user)
-        set({ user: fb, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
-        const profile = await fetchProfile(session.user)
-        set({ user: profile })
+        const basic = profileFromUser(session.user)
+        set({ user: basic, supabaseUser: session.user, isAuthenticated: true, isLoading: false })
+        const full = await loadProfile(session.user)
+        set({ user: full })
       } else {
         set({ user: null, supabaseUser: null, isAuthenticated: false, isLoading: false })
       }
