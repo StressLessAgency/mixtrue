@@ -61,7 +61,7 @@ Genre: ${genre}
 Analysis Mode: ${mode}
 File Size: ${fileSizeMb} MB
 
-Analyze the audio and return a JSON object matching this exact structure. Be specific, actionable, and genre-aware in your analysis. Use your expertise to evaluate frequency balance, dynamics, stereo field, club readiness, mastering quality, and provide AI fix recommendations.
+Analyze the audio and return a JSON object matching this exact structure. Be specific, actionable, and genre-aware in your analysis. Use your expertise to evaluate frequency balance, dynamics, stereo field, club readiness, mastering quality, and provide fix recommendations.
 
 Return ONLY valid JSON (no markdown, no code fences) with this structure:
 
@@ -213,7 +213,7 @@ IMPORTANT GUIDELINES:
 - Be honest and specific about issues detected
 - Provide actionable, professional-grade recommendations
 - Include at least 3-5 priority issues
-- Include at least 3-5 AI fix recommendations
+- Include at least 3-5 fix recommendations
 - All scores should reflect genuine analysis, not just high numbers
 - Return ONLY the JSON object, no other text`
 }
@@ -259,7 +259,7 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
     ]
   } else {
     // --- Path 2: Files API upload (files 100-125 MB) ---
-    onStageUpdate?.('Uploading large file to Gemini Files API...')
+    onStageUpdate?.('Uploading large file for analysis...')
 
     let uploaded = await ai.files.upload({
       file,
@@ -283,14 +283,14 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
     ]
   }
 
-  onStageUpdate?.('Sending audio to Gemini AI for analysis...')
+  onStageUpdate?.('Sending audio for analysis...')
 
   const result = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: createUserContent(contentParts),
   })
 
-  onStageUpdate?.('Processing AI analysis results...')
+  onStageUpdate?.('Processing analysis results...')
 
   const responseText = result.text ?? ''
 
@@ -305,7 +305,7 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
     parsed = JSON.parse(jsonStr)
   } catch {
     throw new Error(
-      'Gemini returned a response that could not be parsed as JSON. ' +
+      'The analysis returned a response that could not be parsed as JSON. ' +
       'This can happen with very short audio clips or unsupported formats. ' +
       'Try a WAV or FLAC file at least 30 seconds long.'
     )

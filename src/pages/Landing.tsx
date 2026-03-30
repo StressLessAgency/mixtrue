@@ -16,7 +16,7 @@ export default function Landing() {
               <BarChart3 className="w-5 h-5 text-accent-cyan" />
             </div>
             <span className="font-display font-bold text-lg text-text-primary">
-              mixtrue<span className="text-accent-cyan"> AI</span>
+              mixtrue
             </span>
           </Link>
           <div className="flex items-center gap-4">
@@ -88,7 +88,7 @@ export default function Landing() {
                 <BarChart3 className="w-4 h-4 text-accent-cyan" />
               </div>
               <span className="font-display font-bold text-sm text-text-primary">
-                mixtrue<span className="text-accent-cyan"> AI</span>
+                mixtrue
               </span>
             </div>
             <div className="flex gap-6 text-xs text-text-muted font-body">

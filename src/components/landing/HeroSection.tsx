@@ -69,7 +69,7 @@ export default function HeroSection() {
           variants={itemVariants}
           className="font-body text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10"
         >
-          AI-powered frequency, dynamic, and master analysis built for producers
+          Frequency, dynamic, and master analysis built for producers
           and DJs who demand precision.
         </motion.p>
 

@@ -24,7 +24,7 @@ const mockOperations = [
   'Analyzing stereo correlation and phase...',
   'Simulating club playback at 106dB SPL...',
   'Measuring true peak and codec resilience...',
-  'Generating AI fix recommendations...',
+  'Generating fix recommendations...',
   'Wiping temporary storage securely...',
 ]
 
@@ -103,8 +103,8 @@ export default function Processing() {
         setCurrentOperation(stage)
         // Map Gemini's real progress signals to specific stages for a responsive feel
         if (stage === 'Converting audio for analysis...') advanceToStage(1)
-        if (stage === 'Sending audio to Gemini AI for analysis...') advanceToStage(3)
-        if (stage === 'Processing AI analysis results...') advanceToStage(7)
+        if (stage === 'Sending audio for analysis...') advanceToStage(3)
+        if (stage === 'Processing analysis results...') advanceToStage(7)
       },
     })
       .then((report) => {
@@ -120,7 +120,7 @@ export default function Processing() {
         completeAllStages()
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Gemini analysis failed')
+        setError(err instanceof Error ? err.message : 'Analysis failed')
       })
   }, [file, genre, analysisMode, reportId, setReport, advanceToStage, completeAllStages, user?.id])
 
@@ -204,7 +204,7 @@ export default function Processing() {
     <PageTransition>
       <div className="max-w-2xl mx-auto">
         <h1 className="font-display font-bold text-2xl text-text-primary mb-2">
-          {USE_GEMINI ? 'AI Analyzing Your Track' : 'Processing Your Track'}
+          {USE_GEMINI ? 'Analyzing Your Track' : 'Processing Your Track'}
         </h1>
 
         <div className="flex items-center gap-3 mb-8">
@@ -213,7 +213,7 @@ export default function Processing() {
           </span>
           <Badge variant="cyan">{genre ?? 'techno'}</Badge>
           <Badge variant="purple">{analysisMode ?? 'both'}</Badge>
-          {USE_GEMINI && <Badge variant="default">Gemini AI</Badge>}
+
         </div>
 
         {error ? (

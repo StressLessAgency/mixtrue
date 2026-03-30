@@ -3,7 +3,7 @@ import { Upload, Cpu, FileBarChart } from 'lucide-react'
 
 const steps = [
   { number: '01', icon: Upload, title: 'Upload your track', description: 'Drag & drop your WAV, AIFF, or FLAC file. Up to 32-bit / 96kHz supported.' },
-  { number: '02', icon: Cpu, title: 'AI analyzes every layer', description: 'Frequency, dynamics, stereo field, club readiness, and master — all analyzed in seconds.' },
+  { number: '02', icon: Cpu, title: 'We analyze every layer', description: 'Frequency, dynamics, stereo field, club readiness, and master — all analyzed in seconds.' },
   { number: '03', icon: FileBarChart, title: 'Get your report', description: 'Detailed scores, fix recommendations, and a downloadable PDF. Your file is deleted instantly.' },
 ]
 

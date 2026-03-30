@@ -373,7 +373,7 @@ export const mockStatusStages: StatusResponse = {
     { id: 5, label: 'Stereo Field Analysis', status: 'pending' },
     { id: 6, label: 'Club Readiness Analysis', status: 'pending' },
     { id: 7, label: 'Master Analysis', status: 'pending' },
-    { id: 8, label: 'Generating AI Report', status: 'pending' },
+    { id: 8, label: 'Generating Report', status: 'pending' },
     { id: 9, label: 'Secure File Deletion', status: 'pending' },
   ],
 }

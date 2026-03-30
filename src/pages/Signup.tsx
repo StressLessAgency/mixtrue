@@ -48,7 +48,7 @@ export default function Signup() {
               <BarChart3 className="w-5 h-5 text-accent-cyan" />
             </div>
             <span className="font-display font-bold text-lg text-text-primary">
-              mixtrue<span className="text-accent-cyan"> AI</span>
+              mixtrue
             </span>
           </div>
 

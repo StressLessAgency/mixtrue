@@ -42,7 +42,7 @@ export function exportReportPdf(report: ReportData) {
   doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), 'F')
 
   // Header
-  addTitle('mixtrue AI — Analysis Report')
+  addTitle('mixtrue — Analysis Report')
   addSubtitle(`Track: ${report.trackName}`)
   addText(`Genre: ${report.genreMode} | Mode: ${report.analysisMode} | Format: ${report.fileFormat} | Size: ${report.fileSizeMb}MB`)
   addText(`Date: ${new Date(report.createdAt).toLocaleDateString()}`)
@@ -75,7 +75,7 @@ export function exportReportPdf(report: ReportData) {
   y = 20
   doc.setFillColor(8, 12, 20)
   doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), 'F')
-  addTitle('AI Fix Plan')
+  addTitle('Fix Plan')
   addSpacer()
 
   report.aiFixes.fixes.forEach((fix) => {
@@ -102,7 +102,7 @@ export function exportReportPdf(report: ReportData) {
   addText(`Session ID: ${report.deletionReceipt.sessionId}`)
   addText(`Receipt ID: ${report.deletionReceipt.receiptId}`)
   addText(`Storage: ${report.deletionReceipt.storage}`)
-  addText(`AI Training: ${report.deletionReceipt.aiTraining}`)
+  addText(`Model Training: ${report.deletionReceipt.aiTraining}`)
 
   doc.save(`mixtrue-report-${report.sessionId.substring(0, 8)}.pdf`)
 }

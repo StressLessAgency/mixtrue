@@ -180,7 +180,7 @@ export default function Report() {
             <TabsTrigger value="stereo">Stereo Field</TabsTrigger>
             <TabsTrigger value="club">Club Readiness</TabsTrigger>
             <TabsTrigger value="master">Master</TabsTrigger>
-            <TabsTrigger value="fixes">AI Fixes</TabsTrigger>
+            <TabsTrigger value="fixes">Fix Plan</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -219,7 +219,7 @@ export default function Report() {
             {gate.canAccessAiFixes ? (
               <AIFixesTab data={report.aiFixes} onExportPdf={handleExportPdf} />
             ) : (
-              <PaywallOverlay feature="AI Fix Plan" />
+              <PaywallOverlay feature="Fix Plan" />
             )}
           </TabsContent>
         </Tabs>
