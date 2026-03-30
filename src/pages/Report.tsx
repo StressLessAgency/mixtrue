@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Download, GitCompare, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -25,83 +25,65 @@ import type { ReportData } from '@/types/analysis'
 export default function Report() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const storedReport = useSessionStore((s) => s.report)
+  const isRealUpload = useSessionStore((s) => s.isRealUpload)
   const [report, setReport] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [_activeTab, setActiveTab] = useState('overview')
   const gate = useFeatureGate()
 
-  // Reactively pick up Gemini result when it arrives in the store
+  // 1. Reactively use stored report from Gemini (works even if it arrives late)
   useEffect(() => {
-    if (!loading || report) return
-    if (storedReport && storedReport.sessionId === sessionId) {
+    if (report) return // Already have a report, don't overwrite
+    if (storedReport) {
+      console.log('[mixtrue] Using stored report:', storedReport.trackName)
       setReport(storedReport)
       setLoading(false)
       setError(null)
     }
-  }, [storedReport, sessionId, loading, report])
+  }, [storedReport, report])
 
-  const fetchReport = useCallback((signal?: AbortSignal) => {
+  // 2. On mount, try Supabase for saved reports (history visits), then fall back
+  useEffect(() => {
     if (!sessionId) return
+    if (storedReport) return // Store already has it, effect above handles it
 
-    // Use stored report from Gemini analysis if available and matching
-    if (storedReport && storedReport.sessionId === sessionId) {
-      setReport(storedReport)
-      setLoading(false)
-      return
-    }
-
-    // Try loading from Supabase (for history/saved reports)
+    // Try Supabase first
     analysisApi.getSavedReport(sessionId).then((saved) => {
       if (saved) {
+        console.log('[mixtrue] Loaded saved report from Supabase')
         setReport(saved)
         setLoading(false)
         return
       }
-      startPolling()
-    }).catch(() => startPolling())
 
-    function startPolling() {
-      const isReal = useSessionStore.getState().isRealUpload
-      const maxAttempts = isReal ? 60 : 5
-      let attempts = 0
-      const checkInterval = setInterval(() => {
-        const current = useSessionStore.getState().report
-        attempts++
-        if (current && current.sessionId === sessionId) {
-          clearInterval(checkInterval)
-          setReport(current)
+      // No saved report - if this is a real upload, keep waiting (Gemini still running)
+      // If demo, load mock data
+      if (!isRealUpload) {
+        analysisApi.getReport(sessionId).then((mock) => {
+          setReport(mock)
           setLoading(false)
-          return
-        }
-        if (attempts >= maxAttempts) {
-          clearInterval(checkInterval)
-          if (isReal) {
-            setError('Analysis is still processing. Please wait a moment and refresh.')
-            setLoading(false)
-          } else {
-            analysisApi.getReport(sessionId!)
-              .then(setReport)
-              .catch(() => setError('Report not available'))
-              .finally(() => setLoading(false))
-          }
-        }
-      }, 1000)
-
-      if (signal) {
-        signal.addEventListener('abort', () => clearInterval(checkInterval))
+        })
       }
-    }
+      // For real uploads, the reactive useEffect above will catch the Gemini result
+    }).catch(() => {
+      if (!isRealUpload) {
+        analysisApi.getReport(sessionId).then(setReport).finally(() => setLoading(false))
+      }
+    })
+  }, [sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    setLoading(true)
-    setError(null)
-  }, [sessionId, storedReport])
-
+  // 3. Timeout for real uploads - if Gemini hasn't returned after 90s, show error
   useEffect(() => {
-    const controller = new AbortController()
-    fetchReport(controller.signal)
-    return () => controller.abort()
-  }, [fetchReport])
+    if (!isRealUpload || report) return
+    const timeout = setTimeout(() => {
+      if (!report) {
+        setError('Analysis is taking longer than expected. Please refresh the page to check again.')
+        setLoading(false)
+      }
+    }, 90_000)
+    return () => clearTimeout(timeout)
+  }, [isRealUpload, report])
 
   if (loading) {
     const isReal = useSessionStore.getState().isRealUpload
@@ -138,9 +120,9 @@ export default function Report() {
         <div className="glass-card p-8 text-center space-y-4">
           <p className="text-accent-red font-display font-semibold mb-2">Error Loading Report</p>
           <p className="text-sm text-text-secondary">{error ?? 'Report not found'}</p>
-          <Button variant="outline" size="sm" onClick={() => fetchReport()}>
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
             <RefreshCw className="w-3 h-3" />
-            Retry
+            Refresh
           </Button>
         </div>
       </PageTransition>
