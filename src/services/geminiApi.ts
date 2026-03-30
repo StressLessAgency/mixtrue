@@ -3,6 +3,10 @@ import type { ReportData, GenreMode, AnalysisMode } from '@/types/analysis'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 
+// Gemini inline data limit. Files larger than this must use the File API,
+// which requires a server-side upload proxy (not supported in this browser-only build).
+const GEMINI_INLINE_LIMIT_BYTES = 20 * 1024 * 1024 // 20 MB
+
 function getClient() {
   if (!GEMINI_API_KEY) {
     throw new Error('Missing VITE_GEMINI_API_KEY environment variable')
@@ -209,12 +213,26 @@ export interface GeminiAnalysisOptions {
   file: File
   genre: GenreMode
   mode: AnalysisMode
+  /** The session ID to embed in the returned report. Avoids a UUID mismatch between
+   *  the store-generated ID (used for routing) and the report's internal ID. */
+  sessionId: string
   referenceFile?: File
   onStageUpdate?: (stage: string) => void
 }
 
 export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise<ReportData> {
-  const { file, genre, mode, onStageUpdate } = options
+  const { file, genre, mode, sessionId, onStageUpdate } = options
+
+  // FIX: Validate file size before attempting the Gemini API call.
+  // Inline data is capped at 20 MB. Larger files must go through the File API,
+  // which requires a server-side upload proxy (not implemented in this build).
+  if (file.size > GEMINI_INLINE_LIMIT_BYTES) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1)
+    throw new Error(
+      `File is ${sizeMb} MB — the browser-based Gemini analyzer supports files up to 20 MB. ` +
+      `Please export a lower-bitrate or shorter preview for analysis, or use a compressed format.`
+    )
+  }
 
   const client = getClient()
   const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' })
@@ -238,7 +256,7 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
 
   const responseText = result.response.text()
 
-  // Strip potential markdown code fences
+  // Strip potential markdown code fences (Gemini sometimes wraps JSON despite instructions)
   const jsonStr = responseText
     .replace(/^```(?:json)?\s*/m, '')
     .replace(/```\s*$/m, '')
@@ -248,18 +266,25 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
   try {
     parsed = JSON.parse(jsonStr)
   } catch {
-    throw new Error('Failed to parse Gemini response as JSON. The AI returned an invalid format.')
+    throw new Error(
+      'Gemini returned a response that could not be parsed as JSON. ' +
+      'This can happen with very short audio clips or unsupported formats. ' +
+      'Try a WAV or FLAC file at least 30 seconds long.'
+    )
   }
 
-  // Attach session metadata
   const reportData = parsed as unknown as ReportData
-  reportData.sessionId = crypto.randomUUID()
+
+  // FIX: Use the caller-provided sessionId (the same one embedded in the URL)
+  // so that Report.tsx's storedReport.sessionId === sessionId check always passes.
+  reportData.sessionId = sessionId
   reportData.createdAt = new Date().toISOString()
   reportData.deletionReceipt = {
     receiptId: 'DEL-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
     fileName: file.name,
     deletedAt: new Date().toISOString(),
-    sessionId: reportData.sessionId,
+    // FIX: Use the canonical sessionId here too (was previously a different random UUID)
+    sessionId,
     storage: 'Ephemeral session — no disk',
     aiTraining: 'Opted out (default)',
   }

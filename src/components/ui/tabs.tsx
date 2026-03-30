@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface TabsContextValue {
@@ -16,16 +16,30 @@ function useTabs() {
 
 interface TabsProps {
   defaultValue: string
+  /** Controlled mode: when provided, this value overrides internal state */
+  value?: string
   children: ReactNode
   className?: string
   onValueChange?: (value: string) => void
 }
 
-export function Tabs({ defaultValue, children, className, onValueChange }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultValue)
+export function Tabs({ defaultValue, value, children, className, onValueChange }: TabsProps) {
+  const [internalTab, setInternalTab] = useState(defaultValue)
+
+  // Sync internal state when controlled value changes
+  useEffect(() => {
+    if (value !== undefined) {
+      setInternalTab(value)
+    }
+  }, [value])
+
+  const activeTab = value !== undefined ? value : internalTab
 
   const handleChange = (tab: string) => {
-    setActiveTab(tab)
+    if (value === undefined) {
+      // Uncontrolled mode — manage our own state
+      setInternalTab(tab)
+    }
     onValueChange?.(tab)
   }
 

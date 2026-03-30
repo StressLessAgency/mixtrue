@@ -8,8 +8,10 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSessionStore } from '@/stores/useSessionStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { mockStatusStages, mockDeletionReceipt } from '@/services/mockData'
 import { analyzeWithGemini } from '@/services/geminiApi'
+import { saveAnalysisToHistory, persistReportForSession } from '@/services/historyService'
 import type { ProcessingStage } from '@/types/analysis'
 
 const USE_GEMINI = !!import.meta.env.VITE_GEMINI_API_KEY
@@ -26,11 +28,16 @@ const mockOperations = [
   'Wiping temporary storage securely...',
 ]
 
+// Staggered delays (ms) per stage for the Gemini ticker.
+// Total ~55 s — leaves comfortable headroom for most real analysis times.
+const GEMINI_STAGE_DELAYS_MS = [3000, 5000, 8000, 12000, 16000, 20000, 25000, 32000]
+
 const MAX_PROCESSING_TIME_MS = 120_000
 
 export default function Processing() {
   const navigate = useNavigate()
   const { genre, analysisMode, file, sessionId, setReport } = useSessionStore()
+  const { user } = useAuthStore()
   const [currentStage, setCurrentStage] = useState(0)
   const [stages, setStages] = useState<ProcessingStage[]>(mockStatusStages.stages)
   const [isComplete, setIsComplete] = useState(false)
@@ -39,13 +46,38 @@ export default function Processing() {
   const [error, setError] = useState<string | null>(null)
   const [currentOperation, setCurrentOperation] = useState(mockOperations[0])
   const geminiStarted = useRef(false)
+  // Tracks whether Gemini has finished so the stage ticker can stop early
+  const geminiComplete = useRef(false)
 
   const totalStages = stages.length
   const progress = Math.min(100, (currentStage / totalStages) * 100)
 
   const reportId = sessionId ?? 'demo'
 
-  // Safety timeout
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  const advanceToStage = useCallback((target: number) => {
+    setStages((prev) =>
+      prev.map((s, i) =>
+        i < target
+          ? { ...s, status: 'completed' as const }
+          : i === target
+          ? { ...s, status: 'active' as const }
+          : s
+      )
+    )
+    setCurrentStage(target)
+  }, [])
+
+  const completeAllStages = useCallback(() => {
+    setStages((prev) => prev.map((s) => ({ ...s, status: 'completed' as const })))
+    setCurrentStage(totalStages)
+    setCurrentOperation('Analysis complete!')
+    setIsComplete(true)
+  }, [totalStages])
+
+  // ── Safety timeout ─────────────────────────────────────────────────────────
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!isComplete && !error) {
@@ -55,51 +87,67 @@ export default function Processing() {
     return () => clearTimeout(timeout)
   }, [isComplete, error])
 
-  // Gemini AI analysis
+  // ── Gemini AI analysis ─────────────────────────────────────────────────────
+
   useEffect(() => {
     if (!USE_GEMINI || !file || !genre || !analysisMode || geminiStarted.current) return
     geminiStarted.current = true
-
-    const stageLabels: Record<string, number> = {
-      'Converting audio for analysis...': 0,
-      'Sending audio to Gemini AI for analysis...': 2,
-      'Processing AI analysis results...': 6,
-    }
 
     analyzeWithGemini({
       file,
       genre,
       mode: analysisMode,
+      // FIX: pass the canonical session ID so the report's sessionId matches the URL param
+      sessionId: reportId,
       onStageUpdate: (stage) => {
         setCurrentOperation(stage)
-        const targetStage = stageLabels[stage]
-        if (targetStage !== undefined) {
-          // Advance stages up to the target
-          setStages((prev) =>
-            prev.map((s, i) =>
-              i < targetStage ? { ...s, status: 'completed' as const } :
-              i === targetStage ? { ...s, status: 'active' as const } : s
-            )
-          )
-          setCurrentStage(targetStage)
-        }
+        // Map Gemini's real progress signals to specific stages for a responsive feel
+        if (stage === 'Converting audio for analysis...') advanceToStage(1)
+        if (stage === 'Sending audio to Gemini AI for analysis...') advanceToStage(3)
+        if (stage === 'Processing AI analysis results...') advanceToStage(7)
       },
     })
       .then((report) => {
-        report.sessionId = reportId
+        geminiComplete.current = true
         setReport(report)
-        // Complete all stages
-        setStages((prev) => prev.map((s) => ({ ...s, status: 'completed' as const })))
-        setCurrentStage(totalStages)
-        setCurrentOperation('Analysis complete!')
-        setIsComplete(true)
+
+        // FIX: Persist to history so History page shows real analyses, not just mock data
+        void saveAnalysisToHistory(report, user?.id)
+
+        // FIX: Persist to sessionStorage so report survives a page refresh
+        persistReportForSession(report)
+
+        completeAllStages()
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Gemini analysis failed')
       })
-  }, [file, genre, analysisMode, reportId, setReport, totalStages])
+  }, [file, genre, analysisMode, reportId, setReport, advanceToStage, completeAllStages, user?.id])
 
-  // Mock stage progression (only when not using Gemini)
+  // ── Gemini stage ticker ────────────────────────────────────────────────────
+  // Slowly advances stages 0–7 while Gemini is working, giving the user visual
+  // feedback. Uses staggered delays so it feels organic, not mechanical.
+  // Stops as soon as Gemini finishes (completeAllStages jumps to 100%).
+
+  useEffect(() => {
+    if (!USE_GEMINI || isComplete || error || isTimedOut) return
+    // Don't advance past stage 7 — leave the final deletion stage for real completion
+    if (currentStage >= totalStages - 2) return
+    if (geminiComplete.current) return
+
+    const delay = GEMINI_STAGE_DELAYS_MS[Math.min(currentStage, GEMINI_STAGE_DELAYS_MS.length - 1)]
+    const timer = setTimeout(() => {
+      if (geminiComplete.current) return // Gemini finished while timer was pending
+      const next = Math.min(currentStage + 1, totalStages - 2)
+      advanceToStage(next)
+      setCurrentOperation(mockOperations[Math.min(next, mockOperations.length - 1)])
+    }, delay)
+
+    return () => clearTimeout(timer)
+  }, [USE_GEMINI, currentStage, totalStages, isComplete, error, isTimedOut, advanceToStage])
+
+  // ── Mock stage progression (non-Gemini mode) ───────────────────────────────
+
   useEffect(() => {
     if (USE_GEMINI || isTimedOut || error) return
     if (currentStage >= totalStages) {
@@ -108,20 +156,15 @@ export default function Processing() {
     }
 
     const timer = setTimeout(() => {
-      setStages((prev) =>
-        prev.map((s, i) =>
-          i === currentStage ? { ...s, status: 'completed' as const } :
-          i === currentStage + 1 ? { ...s, status: 'active' as const } : s
-        )
-      )
-      setCurrentStage((prev) => prev + 1)
+      advanceToStage(currentStage + 1)
       setCurrentOperation(mockOperations[Math.min(currentStage + 1, mockOperations.length - 1)])
     }, 1200 + Math.random() * 800)
 
     return () => clearTimeout(timer)
-  }, [currentStage, totalStages, isTimedOut, error])
+  }, [currentStage, totalStages, isTimedOut, error, advanceToStage])
 
-  // Auto-redirect countdown after completion
+  // ── Auto-redirect countdown after completion ───────────────────────────────
+
   useEffect(() => {
     if (!isComplete) return
     const timer = setInterval(() => {
@@ -137,6 +180,8 @@ export default function Processing() {
     return () => clearInterval(timer)
   }, [isComplete, navigate, reportId])
 
+  // ── Reset / retry ──────────────────────────────────────────────────────────
+
   const handleRetry = useCallback(() => {
     setIsTimedOut(false)
     setError(null)
@@ -146,11 +191,14 @@ export default function Processing() {
     setCurrentOperation(mockOperations[0])
     setStages(mockStatusStages.stages)
     geminiStarted.current = false
+    geminiComplete.current = false
   }, [])
 
   const handleSkipToReport = useCallback(() => {
     navigate(`/app/report/${reportId}`)
   }, [navigate, reportId])
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <PageTransition>
@@ -160,7 +208,9 @@ export default function Processing() {
         </h1>
 
         <div className="flex items-center gap-3 mb-8">
-          <span className="text-sm text-text-secondary font-body">{file?.name ?? 'Midnight Protocol (Final Mix).wav'}</span>
+          <span className="text-sm text-text-secondary font-body">
+            {file?.name ?? 'Midnight Protocol (Final Mix).wav'}
+          </span>
           <Badge variant="cyan">{genre ?? 'techno'}</Badge>
           <Badge variant="purple">{analysisMode ?? 'both'}</Badge>
           {USE_GEMINI && <Badge variant="default">Gemini AI</Badge>}
@@ -202,9 +252,7 @@ export default function Processing() {
 
             <div className="mt-8 space-y-3">
               <Progress value={progress} showLabel />
-              <p className="text-xs text-text-secondary font-mono">
-                {currentOperation}
-              </p>
+              <p className="text-xs text-text-secondary font-mono">{currentOperation}</p>
             </div>
 
             {isComplete && (
