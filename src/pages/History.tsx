@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Info } from 'lucide-react'
 import PageTransition from '@/components/layout/PageTransition'
@@ -19,11 +19,16 @@ interface HistoryEntry {
   masterScore: number
 }
 
+interface TrackGroup {
+  trackName: string
+  sessions: HistoryEntry[]
+}
+
 export default function History() {
   const [sessions, setSessions] = useState<HistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [compareOpen, setCompareOpen] = useState(false)
-  const [compareIdx, setCompareIdx] = useState<number | null>(null)
+  const [compareData, setCompareData] = useState<{ v1: HistoryEntry; v2: HistoryEntry; v1Label: string; v2Label: string } | null>(null)
 
   useEffect(() => {
     analysisApi.getHistory()
@@ -31,8 +36,21 @@ export default function History() {
       .finally(() => setLoading(false))
   }, [])
 
-  const latest = sessions[0] ?? null
-  const compareTarget = compareIdx !== null ? sessions[compareIdx] : null
+  // Group sessions by track name — each unique track gets its own section
+  // Sessions within a track are ordered newest-first (from the API)
+  const groups = useMemo<TrackGroup[]>(() => {
+    const map = new Map<string, HistoryEntry[]>()
+    for (const s of sessions) {
+      const key = s.trackName.trim().toLowerCase()
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(s)
+    }
+    // Return groups ordered by most recent session first
+    return Array.from(map.values()).map((entries) => ({
+      trackName: entries[0].trackName,
+      sessions: entries,
+    }))
+  }, [sessions])
 
   if (loading) {
     return (
@@ -55,14 +73,15 @@ export default function History() {
             <h1 className="font-display font-bold text-2xl text-text-primary">Track History</h1>
             <p className="text-sm text-text-secondary mt-1">
               {sessions.length > 0
-                ? `${sessions.length} analysis${sessions.length !== 1 ? 'es' : ''} on record.`
+                ? `${sessions.length} analysis${sessions.length !== 1 ? 'es' : ''} across ${groups.length} track${groups.length !== 1 ? 's' : ''}.`
                 : 'No analyses yet. Upload your first track to get started.'}
             </p>
           </div>
           <Link to="/app/upload">
             <Button size="md">
               <Plus className="w-4 h-4" />
-              Analyze Track
+              <span className="hidden sm:inline">Analyze Track</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </Link>
         </div>
@@ -78,22 +97,57 @@ export default function History() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
-            {sessions.map((session, i) => (
-              <RevisionCard
-                key={session.id}
-                id={session.id}
-                trackName={session.trackName}
-                version={`V${sessions.length - i}`}
-                date={session.date}
-                genreMode={session.genreMode}
-                analysisMode={session.analysisMode}
-                mixdownScore={session.mixdownScore}
-                clubScore={session.clubScore}
-                masterScore={session.masterScore}
-                onCompare={i > 0 ? () => { setCompareIdx(i); setCompareOpen(true) } : undefined}
-              />
-            ))}
+          <div className="space-y-8">
+            {groups.map((group) => {
+              const hasVersions = group.sessions.length > 1
+              return (
+                <div key={group.trackName}>
+                  {/* Track group header — only show if multiple tracks exist */}
+                  {groups.length > 1 && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-5 rounded-full bg-accent-cyan" />
+                      <h2 className="font-display font-semibold text-sm text-text-primary truncate">{group.trackName}</h2>
+                      {hasVersions && (
+                        <span className="text-[10px] font-mono text-text-muted">
+                          {group.sessions.length} versions
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-3">
+                    {group.sessions.map((session, i) => {
+                      // Version numbering: oldest = V1, newest = highest
+                      const versionNum = group.sessions.length - i
+                      return (
+                        <RevisionCard
+                          key={session.id}
+                          id={session.id}
+                          trackName={session.trackName}
+                          version={hasVersions ? `V${versionNum}` : undefined}
+                          date={session.date}
+                          genreMode={session.genreMode}
+                          analysisMode={session.analysisMode}
+                          mixdownScore={session.mixdownScore}
+                          clubScore={session.clubScore}
+                          masterScore={session.masterScore}
+                          onCompare={hasVersions && i < group.sessions.length - 1 ? () => {
+                            // Compare this version with the latest (index 0) in the same track group
+                            const latest = group.sessions[0]
+                            setCompareData({
+                              v1: session,
+                              v2: latest,
+                              v1Label: `V${versionNum}`,
+                              v2Label: `V${group.sessions.length}`,
+                            })
+                            setCompareOpen(true)
+                          } : undefined}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -104,12 +158,12 @@ export default function History() {
           </p>
         </div>
 
-        {latest && (
+        {compareData && (
           <ComparisonModal
             open={compareOpen}
             onClose={() => setCompareOpen(false)}
-            v1={compareTarget ? { version: `V${sessions.length - (compareIdx ?? 0)}`, mixdownScore: compareTarget.mixdownScore, clubScore: compareTarget.clubScore, masterScore: compareTarget.masterScore } : null}
-            v2={{ version: `V${sessions.length}`, mixdownScore: latest.mixdownScore, clubScore: latest.clubScore, masterScore: latest.masterScore }}
+            v1={{ version: compareData.v1Label, mixdownScore: compareData.v1.mixdownScore, clubScore: compareData.v1.clubScore, masterScore: compareData.v1.masterScore }}
+            v2={{ version: compareData.v2Label, mixdownScore: compareData.v2.mixdownScore, clubScore: compareData.v2.clubScore, masterScore: compareData.v2.masterScore }}
           />
         )}
       </div>

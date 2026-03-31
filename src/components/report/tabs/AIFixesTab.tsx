@@ -30,7 +30,7 @@ function AIFixesTabInner({ data, onExportPdf }: AIFixesTabProps) {
       {/* Fix Cards */}
       <div className="space-y-6">
         {data.fixes.map((fix, i) => (
-          <div key={i} className="glass-card p-6">
+          <div key={i} className="glass-card p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
               <Badge variant={priorityVariant[fix.priority]} className="text-[10px] uppercase">
                 {fix.priority}

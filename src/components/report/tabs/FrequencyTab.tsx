@@ -25,31 +25,31 @@ export default function FrequencyTab({ data }: FrequencyTabProps) {
 
       <div>
         <h3 className="font-display font-semibold text-lg text-text-primary mb-4">Band Breakdown</h3>
-        <div className="glass-card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="glass-card overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
             <thead>
               <tr className="border-b border-border-subtle">
-                <th className="text-left py-3 px-4 font-display font-semibold text-text-secondary text-xs uppercase">Band</th>
-                <th className="text-left py-3 px-4 font-display font-semibold text-text-secondary text-xs uppercase">Range</th>
-                <th className="text-right py-3 px-4 font-display font-semibold text-text-secondary text-xs uppercase">Level</th>
-                <th className="text-right py-3 px-4 font-display font-semibold text-text-secondary text-xs uppercase">Target</th>
-                <th className="text-right py-3 px-4 font-display font-semibold text-text-secondary text-xs uppercase">Dev</th>
-                <th className="text-center py-3 px-4 font-display font-semibold text-text-secondary text-xs uppercase">Status</th>
+                <th className="text-left py-2 px-2 sm:py-3 sm:px-4 font-display font-semibold text-text-secondary text-xs uppercase">Band</th>
+                <th className="text-left py-2 px-2 sm:py-3 sm:px-4 font-display font-semibold text-text-secondary text-xs uppercase">Range</th>
+                <th className="text-right py-2 px-2 sm:py-3 sm:px-4 font-display font-semibold text-text-secondary text-xs uppercase">Level</th>
+                <th className="text-right py-2 px-2 sm:py-3 sm:px-4 font-display font-semibold text-text-secondary text-xs uppercase">Target</th>
+                <th className="text-right py-2 px-2 sm:py-3 sm:px-4 font-display font-semibold text-text-secondary text-xs uppercase">Dev</th>
+                <th className="text-center py-2 px-2 sm:py-3 sm:px-4 font-display font-semibold text-text-secondary text-xs uppercase">Status</th>
               </tr>
             </thead>
             <tbody>
               {data.bands.map((band) => (
                 <tr key={band.name} className="border-b border-border-subtle/50 hover:bg-white/[0.02]">
-                  <td className="py-3 px-4 font-body text-text-primary">{band.name}</td>
-                  <td className="py-3 px-4 font-mono text-text-secondary text-xs">{band.range}</td>
-                  <td className="py-3 px-4 font-mono text-text-primary text-right text-xs">{band.userLevel.toFixed(1)} dB</td>
-                  <td className="py-3 px-4 font-mono text-text-secondary text-right text-xs">{band.genreTarget.toFixed(1)} dB</td>
-                  <td className="py-3 px-4 font-mono text-right text-xs" style={{
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 font-body text-text-primary text-xs sm:text-sm">{band.name}</td>
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 font-mono text-text-secondary text-xs">{band.range}</td>
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 font-mono text-text-primary text-right text-xs">{band.userLevel.toFixed(1)}</td>
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 font-mono text-text-secondary text-right text-xs">{band.genreTarget.toFixed(1)}</td>
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 font-mono text-right text-xs" style={{
                     color: Math.abs(band.deviation) > 2 ? '#FF3B5C' : Math.abs(band.deviation) > 1 ? '#FFB800' : '#00FF9D',
                   }}>
                     {band.deviation > 0 ? '+' : ''}{band.deviation.toFixed(1)}
                   </td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 text-center">
                     <Badge variant={statusVariant[band.status]} className="text-[10px] uppercase">
                       {band.status}
                     </Badge>

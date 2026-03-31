@@ -200,9 +200,9 @@ export default function ClubReadinessTab({ data }: ClubReadinessTabProps) {
       {/* DJ Playability */}
       {data.djPlayability && (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
             <h3 className="font-display font-semibold text-lg text-text-primary">DJ Playability</h3>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="text-center">
                 <p className="text-[10px] text-text-muted font-mono">MIX IN</p>
                 <p className={`text-sm font-mono font-bold ${data.djPlayability.mixInScore >= 75 ? 'text-accent-green' : data.djPlayability.mixInScore >= 50 ? 'text-accent-amber' : 'text-accent-red'}`}>

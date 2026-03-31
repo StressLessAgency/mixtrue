@@ -19,7 +19,7 @@ export default function StereoFieldTab({ data }: StereoFieldTabProps) {
         <div>
           <h3 className="font-display font-semibold text-lg text-text-primary mb-4">Stereo Phase Display</h3>
           <div className="glass-card p-4 flex justify-center">
-            <GoniometerDisplay data={data.goniometerData} size={260} />
+            <GoniometerDisplay data={data.goniometerData} size={220} />
           </div>
         </div>
 
@@ -83,7 +83,7 @@ export default function StereoFieldTab({ data }: StereoFieldTabProps) {
             <BarChart data={data.stereoWidthBands} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis type="number" domain={[0, 100]} tick={{ fill: '#8896A8', fontSize: 10 }} stroke="rgba(255,255,255,0.06)" />
-              <YAxis type="category" dataKey="band" tick={{ fill: '#8896A8', fontSize: 10 }} stroke="rgba(255,255,255,0.06)" width={70} />
+              <YAxis type="category" dataKey="band" tick={{ fill: '#8896A8', fontSize: 10 }} stroke="rgba(255,255,255,0.06)" width={55} />
               <ReferenceLine x={50} stroke="rgba(255,255,255,0.1)" />
               <Bar dataKey="width" fill="#00E5FF" radius={[0, 4, 4, 0]} barSize={12} />
               <Bar dataKey="ideal" fill="rgba(255,184,0,0.25)" radius={[0, 4, 4, 0]} barSize={12} />
@@ -95,21 +95,21 @@ export default function StereoFieldTab({ data }: StereoFieldTabProps) {
       {/* Issues Timeline */}
       <div>
         <h3 className="font-display font-semibold text-lg text-text-primary mb-4">Stereo Issues</h3>
-        <div className="glass-card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="glass-card overflow-x-auto">
+          <table className="w-full text-sm min-w-[360px]">
             <thead>
               <tr className="border-b border-border-subtle">
-                <th className="text-left py-3 px-4 text-xs uppercase text-text-secondary font-display">Timestamp</th>
-                <th className="text-left py-3 px-4 text-xs uppercase text-text-secondary font-display">Issue</th>
-                <th className="text-center py-3 px-4 text-xs uppercase text-text-secondary font-display">Severity</th>
+                <th className="text-left py-2 px-2 sm:py-3 sm:px-4 text-xs uppercase text-text-secondary font-display">Time</th>
+                <th className="text-left py-2 px-2 sm:py-3 sm:px-4 text-xs uppercase text-text-secondary font-display">Issue</th>
+                <th className="text-center py-2 px-2 sm:py-3 sm:px-4 text-xs uppercase text-text-secondary font-display">Severity</th>
               </tr>
             </thead>
             <tbody>
               {data.issues.map((issue, i) => (
                 <tr key={i} className="border-b border-border-subtle/50">
-                  <td className="py-3 px-4 font-mono text-accent-cyan text-xs">{issue.timestamp}</td>
-                  <td className="py-3 px-4 text-text-primary text-xs">{issue.issue}</td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 font-mono text-accent-cyan text-xs">{issue.timestamp}</td>
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 text-text-primary text-xs">{issue.issue}</td>
+                  <td className="py-2 px-2 sm:py-3 sm:px-4 text-center">
                     <Badge variant={issue.severity === 'warning' ? 'amber' : 'cyan'} className="text-[10px]">
                       {issue.severity.toUpperCase()}
                     </Badge>
