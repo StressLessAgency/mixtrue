@@ -97,12 +97,12 @@ export default function Upload() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-secondary">Track</span>
-                    <span className="text-text-primary font-mono truncate max-w-[200px]">{file?.name}</span>
+                    <span className="text-text-primary font-mono truncate max-w-[140px] sm:max-w-[200px]">{file?.name}</span>
                   </div>
                   {refFile && (
                     <div className="flex justify-between">
                       <span className="text-text-secondary">Reference</span>
-                      <span className="text-text-primary font-mono truncate max-w-[200px]">{refFile.name}</span>
+                      <span className="text-text-primary font-mono truncate max-w-[140px] sm:max-w-[200px]">{refFile.name}</span>
                     </div>
                   )}
                 </div>

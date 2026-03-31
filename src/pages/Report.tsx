@@ -137,7 +137,7 @@ export default function Report() {
       <div className="space-y-6">
         {/* Header - DAW style */}
         <div className="daw-panel p-5">
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start">
             {/* Score gauges row */}
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
               <OverallScoreGauge score={report.overallScore} size={130} strokeWidth={8} label="Overall" />
@@ -159,7 +159,7 @@ export default function Report() {
               </div>
 
               {/* Inline metrics bar */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
                 <div className="daw-panel px-3 py-2">
                   <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">LUFS</span>
                   <p className="text-sm font-mono text-accent-cyan">{report.master.integratedLufs.toFixed(1)}</p>

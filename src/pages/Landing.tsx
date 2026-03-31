@@ -135,7 +135,7 @@ export default function Landing() {
               viewport={{ once: true }}
               className="daw-panel overflow-hidden"
             >
-              <div className="grid grid-cols-[1fr_60px_60px] sm:grid-cols-[1fr_100px_100px] text-xs font-mono">
+              <div className="grid grid-cols-[1fr_50px_50px] sm:grid-cols-[1fr_100px_100px] text-xs font-mono">
                 <div className="px-4 py-3 text-text-muted uppercase tracking-wider border-b border-border-subtle">Feature</div>
                 <div className="px-4 py-3 text-accent-cyan text-center border-b border-border-subtle">mixtrue</div>
                 <div className="px-4 py-3 text-text-muted text-center border-b border-border-subtle">Others</div>

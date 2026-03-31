@@ -73,7 +73,7 @@ export function TabsTrigger({ value, children, className, disabled }: TabsTrigge
       disabled={disabled}
       onClick={() => !disabled && setActiveTab(value)}
       className={cn(
-        'px-3 py-2 text-xs font-mono whitespace-nowrap transition-all duration-200 relative cursor-pointer rounded-md uppercase tracking-wider',
+        'px-3 py-2 text-xs font-mono whitespace-nowrap shrink-0 transition-all duration-200 relative cursor-pointer rounded-md uppercase tracking-wider',
         isActive
           ? 'text-accent-cyan bg-accent-cyan/8 shadow-[0_0_12px_rgba(0,229,255,0.1)]'
           : 'text-text-muted hover:text-text-secondary hover:bg-white/[0.02]',

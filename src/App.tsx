@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import AppShell from './components/layout/AppShell'
+import AnimatedBackground from './components/AnimatedBackground'
 import { useAuthStore } from './stores/useAuthStore'
 
 // Auto-retry on chunk load failure (happens after new deployments when browser has stale cache)
@@ -59,6 +60,7 @@ export default function App() {
 
   return (
     <div className="grain-overlay">
+      <AnimatedBackground />
       <Suspense fallback={<PageLoader />}>
         <Routes location={location}>
           <Route path="/" element={<Landing />} />

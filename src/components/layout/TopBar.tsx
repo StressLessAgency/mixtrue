@@ -60,7 +60,7 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-12 w-56 glass-card p-2 space-y-1 shadow-xl z-50">
+              <div className="absolute right-0 top-12 w-56 max-w-[calc(100vw-2rem)] glass-card p-2 space-y-1 shadow-xl z-50">
                 <div className="px-3 py-2 border-b border-border-subtle mb-1">
                   <p className="text-sm text-text-primary font-body truncate">{user?.full_name ?? 'User'}</p>
                   <p className="text-xs text-text-muted truncate">{user?.email}</p>
