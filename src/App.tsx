@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import AppShell from './components/layout/AppShell'
 import AnimatedBackground from './components/AnimatedBackground'
+import LoadingScreen from './components/LoadingScreen'
 import { useAuthStore } from './stores/useAuthStore'
 
 // Auto-retry on chunk load failure (happens after new deployments when browser has stale cache)
@@ -23,14 +24,7 @@ const History = lazyRetry(() => import('./pages/History'))
 const Admin = lazyRetry(() => import('./pages/Admin'))
 
 function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-bg-primary">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin" />
-        <span className="text-text-secondary font-body text-sm">Loading...</span>
-      </div>
-    </div>
-  )
+  return <LoadingScreen />
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

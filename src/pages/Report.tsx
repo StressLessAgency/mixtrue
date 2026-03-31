@@ -3,11 +3,12 @@ import { useParams } from 'react-router-dom'
 import { Download, GitCompare, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PageTransition from '@/components/layout/PageTransition'
+import LoadingScreen from '@/components/LoadingScreen'
 import OverallScoreGauge from '@/components/report/OverallScoreGauge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+// Skeleton import removed — branded LoadingScreen replaces it
 import PaywallOverlay from '@/components/report/PaywallOverlay'
 import OverviewTab from '@/components/report/tabs/OverviewTab'
 import FrequencyTab from '@/components/report/tabs/FrequencyTab'
@@ -87,32 +88,7 @@ export default function Report() {
   }, [isRealUpload, report])
 
   if (loading) {
-    const isReal = useSessionStore.getState().isRealUpload
-    return (
-      <PageTransition>
-        <div className="space-y-6">
-          {isReal ? (
-            <div className="glass-card p-12 text-center space-y-4">
-              <div className="w-10 h-10 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="font-display font-semibold text-text-primary">Analyzing your track...</p>
-              <p className="text-sm text-text-secondary">This can take up to 60 seconds for a thorough analysis.</p>
-            </div>
-          ) : (
-            <>
-              <Skeleton className="h-12 w-64" />
-              <div className="flex gap-6">
-                <Skeleton className="h-40 w-40 rounded-full" />
-                <div className="space-y-3 flex-1">
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-20 w-full" />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </PageTransition>
-    )
+    return <LoadingScreen message="Analyzing your track..." />
   }
 
   if (error || !report) {

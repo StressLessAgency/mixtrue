@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Info } from 'lucide-react'
 import PageTransition from '@/components/layout/PageTransition'
+import LoadingScreen from '@/components/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import RevisionCard from '@/components/history/RevisionCard'
 import ComparisonModal from '@/components/history/ComparisonModal'
@@ -53,16 +54,7 @@ export default function History() {
   }, [sessions])
 
   if (loading) {
-    return (
-      <PageTransition>
-        <div className="max-w-3xl mx-auto">
-          <div className="glass-card p-12 text-center">
-            <div className="w-8 h-8 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm text-text-muted font-mono">Loading history...</p>
-          </div>
-        </div>
-      </PageTransition>
-    )
+    return <LoadingScreen message="Loading history..." />
   }
 
   return (

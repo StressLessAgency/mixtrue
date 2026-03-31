@@ -11,9 +11,160 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* ── mixtrue loading screen ── */
+      :root { --splash-bg: #060609; }
+
+      .splash-bg-orb {
+        position: fixed; border-radius: 50%; filter: blur(80px);
+        pointer-events: none; opacity: 0;
+      }
+      .splash-bg-orb--1 {
+        width: 500px; height: 500px; top: 30%; left: 40%;
+        background: radial-gradient(circle, rgba(37,45,54,0.25) 0%, transparent 70%);
+        animation: splashOrbIn 2s ease 0.5s forwards, splashDrift1 12s ease-in-out infinite 2s;
+      }
+      .splash-bg-orb--2 {
+        width: 350px; height: 350px; top: 50%; left: 55%;
+        background: radial-gradient(circle, rgba(50,60,72,0.15) 0%, transparent 70%);
+        animation: splashOrbIn 2s ease 0.8s forwards, splashDrift2 10s ease-in-out infinite 2s;
+      }
+      @keyframes splashOrbIn { to { opacity: 1; } }
+      @keyframes splashDrift1 {
+        0%,100% { transform: translate(-50%,-50%) scale(1); }
+        33% { transform: translate(-40%,-55%) scale(1.1); }
+        66% { transform: translate(-55%,-45%) scale(0.95); }
+      }
+      @keyframes splashDrift2 {
+        0%,100% { transform: translate(-50%,-50%) scale(1); }
+        50% { transform: translate(-45%,-40%) scale(1.15); }
+      }
+
+      .splash-scene {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 52px; position: relative; z-index: 2;
+        min-height: 100vh; justify-content: center;
+      }
+
+      .splash-logo-stack {
+        position: relative; width: min(88vw, 520px); aspect-ratio: 600 / 141;
+      }
+      .splash-logo-stack img {
+        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+      }
+
+      .splash-logo-glow {
+        filter: blur(25px) brightness(2.5); opacity: 0;
+        animation: splashGlowPulse 3s ease-in-out 1.2s infinite; mix-blend-mode: screen;
+      }
+      @keyframes splashGlowPulse { 0%,100% { opacity: 0; } 50% { opacity: 0.35; } }
+
+      .splash-logo-shadow {
+        filter: blur(12px) brightness(0.5); opacity: 0;
+        animation: splashShadowIn 1s ease 0.8s forwards; transform: translateY(8px);
+      }
+      @keyframes splashShadowIn { to { opacity: 0.15; } }
+
+      .splash-logo-main {
+        filter: brightness(2.2) contrast(1.1); opacity: 0;
+        clip-path: inset(0 100% 0 0);
+        animation: splashLogoWipe 1.2s cubic-bezier(0.65,0,0.35,1) 0.3s forwards;
+      }
+      @keyframes splashLogoWipe {
+        0% { opacity: 1; clip-path: inset(0 100% 0 0); }
+        100% { opacity: 1; clip-path: inset(0 0% 0 0); }
+      }
+
+      .splash-logo-shimmer {
+        filter: brightness(5) contrast(0.8); opacity: 0;
+        mask-image: linear-gradient(105deg, transparent 0%, transparent 35%, white 45%, white 55%, transparent 65%, transparent 100%);
+        mask-size: 300% 100%; mask-position: 100% 0;
+        -webkit-mask-image: linear-gradient(105deg, transparent 0%, transparent 35%, white 45%, white 55%, transparent 65%, transparent 100%);
+        -webkit-mask-size: 300% 100%; -webkit-mask-position: 100% 0;
+        animation: splashShimmer 4s ease-in-out 1.8s infinite; mix-blend-mode: screen;
+        pointer-events: none;
+      }
+      @keyframes splashShimmer {
+        0%   { opacity: 0.6; mask-position: 100% 0; -webkit-mask-position: 100% 0; }
+        30%  { opacity: 0.6; mask-position: 0% 0; -webkit-mask-position: 0% 0; }
+        31%  { opacity: 0; }
+        100% { opacity: 0; mask-position: 100% 0; -webkit-mask-position: 100% 0; }
+      }
+
+      .splash-bar-container {
+        width: min(50vw, 240px); display: flex; flex-direction: column;
+        align-items: center; gap: 20px; opacity: 0;
+        animation: splashFadeUp 0.6s ease 1.6s forwards;
+      }
+      .splash-bar-track {
+        width: 100%; height: 2px; background: rgba(255,255,255,0.04);
+        border-radius: 2px; overflow: hidden; position: relative;
+      }
+      .splash-bar-fill {
+        position: absolute; top: 0; left: 0; height: 100%; width: 30%; border-radius: 2px;
+        background: linear-gradient(90deg, transparent, rgba(200,210,222,0.45), transparent);
+        animation: splashBarGlide 2.2s cubic-bezier(0.4,0,0.2,1) infinite;
+      }
+      @keyframes splashBarGlide { 0% { left: -30%; } 100% { left: 100%; } }
+
+      .splash-status { display: flex; align-items: center; gap: 5px; }
+      .splash-status-dot {
+        width: 3px; height: 3px; border-radius: 50%;
+        background: rgba(200,210,222,0.2);
+        animation: splashStatusPulse 1.6s ease-in-out infinite;
+      }
+      .splash-status-dot:nth-child(2) { animation-delay: 0.25s; }
+      .splash-status-dot:nth-child(3) { animation-delay: 0.5s; }
+      @keyframes splashStatusPulse {
+        0%,100% { opacity: 0.15; transform: scale(0.6); }
+        50% { opacity: 1; transform: scale(1.4); }
+      }
+      @keyframes splashFadeUp {
+        0% { opacity: 0; transform: translateY(12px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+
+      .splash-grain {
+        position: fixed; inset: 0; pointer-events: none; z-index: 50;
+        opacity: 0.03; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      .splash-msg {
+        font-family: 'JetBrains Mono', monospace; font-size: 11px;
+        color: rgba(200,210,222,0.3); letter-spacing: 0.05em;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+        .splash-logo-main { opacity: 1 !important; clip-path: none !important; }
+        .splash-bar-container { opacity: 1 !important; }
+      }
+    </style>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="margin:0;background:#060609">
+    <div id="root">
+      <!-- Branded splash — replaced by React on mount -->
+      <div class="splash-grain"></div>
+      <div class="splash-bg-orb splash-bg-orb--1"></div>
+      <div class="splash-bg-orb splash-bg-orb--2"></div>
+      <div class="splash-scene">
+        <div class="splash-logo-stack">
+          <img class="splash-logo-glow"    src="/logo-splash.svg" alt="" aria-hidden="true" />
+          <img class="splash-logo-shadow"  src="/logo-splash.svg" alt="" aria-hidden="true" />
+          <img class="splash-logo-main"    src="/logo-splash.svg" alt="mixtrue" />
+          <img class="splash-logo-shimmer" src="/logo-splash.svg" alt="" aria-hidden="true" />
+        </div>
+        <div class="splash-bar-container">
+          <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
+          <div class="splash-status">
+            <div class="splash-status-dot"></div>
+            <div class="splash-status-dot"></div>
+            <div class="splash-status-dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
