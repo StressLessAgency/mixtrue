@@ -59,7 +59,7 @@ export default function App() {
   }, [initialize])
 
   return (
-    <div className="grain-overlay">
+    <div className="grain-overlay w-full overflow-x-hidden">
       <AnimatedBackground />
       <Suspense fallback={<PageLoader />}>
         <Routes location={location}>

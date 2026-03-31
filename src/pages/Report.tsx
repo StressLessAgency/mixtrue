@@ -136,7 +136,7 @@ export default function Report() {
     <PageTransition>
       <div className="space-y-6">
         {/* Header - DAW style */}
-        <div className="daw-panel p-5">
+        <div className="daw-panel p-3 sm:p-5 overflow-hidden">
           <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start">
             {/* Score gauges row */}
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
@@ -160,17 +160,17 @@ export default function Report() {
 
               {/* Inline metrics bar */}
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-                <div className="daw-panel px-3 py-2">
-                  <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">LUFS</span>
-                  <p className="text-sm font-mono text-accent-cyan">{report.master.integratedLufs.toFixed(1)}</p>
+                <div className="daw-panel px-2 sm:px-3 py-2 overflow-hidden">
+                  <span className="text-[9px] sm:text-[10px] font-mono text-text-muted uppercase tracking-wider">LUFS</span>
+                  <p className="text-xs sm:text-sm font-mono text-accent-cyan truncate">{report.master.integratedLufs.toFixed(1)}</p>
                 </div>
-                <div className="daw-panel px-3 py-2">
-                  <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">True Peak</span>
-                  <p className="text-sm font-mono text-accent-amber">{report.master.truePeak.toFixed(1)} dBTP</p>
+                <div className="daw-panel px-2 sm:px-3 py-2 overflow-hidden">
+                  <span className="text-[9px] sm:text-[10px] font-mono text-text-muted uppercase tracking-wider">Peak</span>
+                  <p className="text-xs sm:text-sm font-mono text-accent-amber truncate">{report.master.truePeak.toFixed(1)} dBTP</p>
                 </div>
-                <div className="daw-panel px-3 py-2">
-                  <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">DR</span>
-                  <p className="text-sm font-mono text-accent-green">{report.dynamics.metrics.drScore.toFixed(1)}</p>
+                <div className="daw-panel px-2 sm:px-3 py-2 overflow-hidden">
+                  <span className="text-[9px] sm:text-[10px] font-mono text-text-muted uppercase tracking-wider">DR</span>
+                  <p className="text-xs sm:text-sm font-mono text-accent-green truncate">{report.dynamics.metrics.drScore.toFixed(1)}</p>
                 </div>
               </div>
 
@@ -192,15 +192,17 @@ export default function Report() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="frequency">Frequency</TabsTrigger>
-            <TabsTrigger value="dynamics">Dynamics</TabsTrigger>
-            <TabsTrigger value="stereo">Stereo Field</TabsTrigger>
-            <TabsTrigger value="club">Club Readiness</TabsTrigger>
-            <TabsTrigger value="master">Master</TabsTrigger>
-            <TabsTrigger value="fixes">Fix Plan</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="frequency">Frequency</TabsTrigger>
+              <TabsTrigger value="dynamics">Dynamics</TabsTrigger>
+              <TabsTrigger value="stereo">Stereo Field</TabsTrigger>
+              <TabsTrigger value="club">Club Readiness</TabsTrigger>
+              <TabsTrigger value="master">Master</TabsTrigger>
+              <TabsTrigger value="fixes">Fix Plan</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview">
             <OverviewTab report={report} onNavigateTab={setActiveTab} />
