@@ -67,29 +67,42 @@ function drawPanel(s: PdfState, x: number, y: number, w: number, h: number, colo
   s.doc.roundedRect(x, y, w, h, 2, 2, 'S')
 }
 
-function drawScoreBar(s: PdfState, x: number, y: number, w: number, score: number, label: string, value: string) {
-  const barH = 5
-  const trackW = w - 60
+function drawScoreBar(s: PdfState, x: number, y: number, w: number, score: number, label: string, value: string, verdict?: string) {
+  const barH = 4
+  const scoreW = 22  // reserved for score text on right
+  const labelW = 55  // reserved for label on left
+  const trackW = w - labelW - scoreW - 4
 
   // Label
   s.doc.setFontSize(7.5)
+  s.doc.setFont('helvetica', 'bold')
   s.doc.setTextColor(...C.textSecondary)
-  s.doc.text(label, x, y + 4)
+  s.doc.text(label, x, y + 3.5)
 
-  // Track
+  // Track background
   s.doc.setFillColor(...C.panelLight)
-  s.doc.roundedRect(x + 60, y, trackW, barH, 1.5, 1.5, 'F')
+  s.doc.roundedRect(x + labelW, y + 0.5, trackW, barH, 1.5, 1.5, 'F')
 
   // Fill
   const fillW = Math.max((score / 100) * trackW, 2)
   const col = scoreColor(score)
   s.doc.setFillColor(...col)
-  s.doc.roundedRect(x + 60, y, fillW, barH, 1.5, 1.5, 'F')
+  s.doc.roundedRect(x + labelW, y + 0.5, fillW, barH, 1.5, 1.5, 'F')
 
-  // Value
+  // Score value (right)
   s.doc.setFontSize(7.5)
-  s.doc.setTextColor(...scoreColor(score))
-  s.doc.text(value, x + w - 1, y + 4, { align: 'right' })
+  s.doc.setFont('helvetica', 'bold')
+  s.doc.setTextColor(...col)
+  s.doc.text(value, x + w, y + 3.5, { align: 'right' })
+
+  // Verdict (below the bar)
+  if (verdict) {
+    s.doc.setFontSize(6)
+    s.doc.setFont('helvetica', 'normal')
+    s.doc.setTextColor(...C.textMuted)
+    const truncated = verdict.length > 70 ? verdict.substring(0, 67) + '...' : verdict
+    s.doc.text(truncated, x + labelW, y + 9.5)
+  }
 }
 
 function drawScoreCard(s: PdfState, x: number, y: number, w: number, h: number, score: number, label: string) {
@@ -313,18 +326,14 @@ export function exportReportPdf(report: ReportData) {
   drawSectionHeader(s, 'Category Breakdown')
 
   report.categoryScores.forEach((cat, i) => {
-    checkPage(s, 12)
+    checkPage(s, 16)
     const rowY = s.y
     if (i % 2 === 0) {
       s.doc.setFillColor(...C.panelLight)
-      s.doc.rect(s.margin, rowY - 1, s.contentW, 9, 'F')
+      s.doc.rect(s.margin, rowY - 1, s.contentW, 13, 'F')
     }
-    drawScoreBar(s, s.margin + 3, rowY + 1, s.contentW - 6, cat.score, cat.category, `${cat.score}/100`)
-    s.doc.setFontSize(6.5)
-    s.doc.setTextColor(...C.textMuted)
-    const verdictX = s.margin + 3 + 60 + ((s.contentW - 6 - 60 - 12) * (cat.score / 100)) + 15
-    s.doc.text(cat.verdict, Math.min(verdictX, s.margin + s.contentW - 40), rowY + 5)
-    s.y += 10
+    drawScoreBar(s, s.margin + 3, rowY + 1, s.contentW - 6, cat.score, cat.category, `${cat.score}/100`, cat.verdict)
+    s.y += 14
   })
 
   s.y += 6

@@ -248,11 +248,11 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
 }
 
 IMPORTANT GUIDELINES:
-- Generate 30 spectrum data points across 20Hz-20kHz (logarithmically spaced: 20, 30, 40, 50, 60, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000)
+- Generate 20 spectrum data points across 20Hz-20kHz (logarithmically spaced: 20, 40, 60, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 8000, 10000, 12500, 16000, 20000, plus 2 more of your choice)
 - Generate 7 frequency bands: Sub-Bass, Bass, Low-Mid, Mid, High-Mid, Presence, Air
-- Generate 200 waveform data points spanning the track duration
-- Generate 500 goniometer data points
-- Generate energy flow data every 2 seconds across the track duration
+- Generate 50 waveform data points spanning the track duration (evenly spaced)
+- Generate 80 goniometer data points
+- Generate energy flow data every 5 seconds across the track duration
 - Generate 4-8 arrangement sections based on actual song structure (Intro, Build, Drop, Breakdown, Outro etc - use genre-appropriate labels)
 - Generate 2-4 loop points at musically sensible positions
 - For ${genre} genre, use appropriate targets and reference values
@@ -281,6 +281,8 @@ export async function analyzeWithGemini(options: GeminiAnalysisOptions): Promise
     model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
+      // @ts-expect-error - thinkingConfig is supported by Gemini 2.5 but not in the SDK types yet
+      thinkingConfig: { thinkingBudget: 0 },
     },
   })
 
