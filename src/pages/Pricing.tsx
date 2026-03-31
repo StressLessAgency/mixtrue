@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Check, BarChart3 } from 'lucide-react'
+import { Check } from 'lucide-react'
+import Logo from '@/components/ui/Logo'
 import { Button } from '@/components/ui/button'
 import PageTransition from '@/components/layout/PageTransition'
 
@@ -41,13 +42,8 @@ export default function Pricing() {
     <PageTransition>
       <div className="min-h-screen bg-bg-primary">
         <nav className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent-cyan/20 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-accent-cyan" />
-            </div>
-            <span className="font-display font-bold text-lg text-text-primary">
-              mixtrue
-            </span>
+          <Link to="/" className="flex items-center">
+            <Logo size="md" />
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/login" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Log In</Link>

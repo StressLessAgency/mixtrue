@@ -130,7 +130,7 @@ export default function Report() {
     )
   }
 
-  const handleExportPdf = () => exportReportPdf(report)
+  const handleExportPdf = async () => await exportReportPdf(report)
 
   return (
     <PageTransition>

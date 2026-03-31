@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Activity, ArrowRight, FileAudio, Check, Star, Headphones, Shield, Zap } from 'lucide-react'
+import { ArrowRight, FileAudio, Check, Star, Headphones, Shield, Zap } from 'lucide-react'
+import Logo from '@/components/ui/Logo'
 import { Button } from '@/components/ui/button'
 import PageTransition from '@/components/layout/PageTransition'
 import HeroSection from '@/components/landing/HeroSection'
@@ -45,13 +46,8 @@ export default function Landing() {
       <div className="min-h-screen bg-bg-primary">
         {/* Nav */}
         <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 bg-bg-primary/80 backdrop-blur-xl border-b border-border-subtle">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-accent-cyan" />
-            </div>
-            <span className="font-display font-bold text-lg text-text-primary">
-              mixtrue
-            </span>
+          <Link to="/" className="flex items-center">
+            <Logo size="md" />
           </Link>
           <div className="flex items-center gap-3 md:gap-5">
             <Link to="/pricing" className="hidden sm:block text-xs font-mono text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider">
@@ -340,13 +336,8 @@ export default function Landing() {
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-8">
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-accent-cyan" />
-                  </div>
-                  <span className="font-display font-bold text-sm text-text-primary">
-                    mixtrue
-                  </span>
+                <div className="mb-3">
+                  <Logo size="sm" />
                 </div>
                 <p className="text-xs text-text-muted max-w-xs">
                   Professional audio mix and master analysis for producers, engineers, and labels.

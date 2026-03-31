@@ -1,5 +1,25 @@
 import jsPDF from 'jspdf'
 import type { ReportData, SeverityLevel } from '@/types/analysis'
+import logoSvg from '@/assets/logo.svg'
+
+// Load and render logo as white PNG for use in dark PDF
+async function loadLogoPng(width = 400, height = 92): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')!
+      // Draw SVG then invert to white
+      ctx.filter = 'brightness(0) invert(1)'
+      ctx.drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = reject
+    img.src = logoSvg
+  })
+}
 
 // ─── Color palette ───────────────────────────────────────────────────────────
 type RGB = [number, number, number]
@@ -160,20 +180,37 @@ function drawSeverityBadge(s: PdfState, x: number, y: number, severity: Severity
   s.doc.text(label, x + bw / 2, y + 0.2, { align: 'center' })
 }
 
-function drawFooter(s: PdfState, pageNum: number, totalPages: number) {
+function drawFooter(s: PdfState, pageNum: number, totalPages: number, logoPng: string | null) {
   const footerY = s.pageH - 8
   s.doc.setDrawColor(...C.border)
   s.doc.setLineWidth(0.3)
   s.doc.line(s.margin, footerY - 3, s.pageW - s.margin, footerY - 3)
-  s.doc.setFontSize(6.5)
-  s.doc.setFont('helvetica', 'normal')
-  s.doc.setTextColor(...C.textMuted)
-  s.doc.text('mixtrue — Professional Audio Analysis', s.margin, footerY)
+
+  if (logoPng) {
+    s.doc.addImage(logoPng, 'PNG', s.margin, footerY - 2.5, 16, 3.7)
+    s.doc.setFontSize(6.5)
+    s.doc.setFont('helvetica', 'normal')
+    s.doc.setTextColor(...C.textMuted)
+    s.doc.text('Professional Audio Analysis', s.margin + 18, footerY)
+  } else {
+    s.doc.setFontSize(6.5)
+    s.doc.setFont('helvetica', 'normal')
+    s.doc.setTextColor(...C.textMuted)
+    s.doc.text('mixtrue — Professional Audio Analysis', s.margin, footerY)
+  }
   s.doc.text(`Page ${pageNum} of ${totalPages}`, s.pageW - s.margin, footerY, { align: 'right' })
 }
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
-export function exportReportPdf(report: ReportData) {
+export async function exportReportPdf(report: ReportData) {
+  // Load logo as white PNG for dark backgrounds
+  let logoPng: string | null = null
+  try {
+    logoPng = await loadLogoPng()
+  } catch {
+    console.warn('[mixtrue] Could not load logo for PDF')
+  }
+
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const s: PdfState = {
     doc,
@@ -194,11 +231,16 @@ export function exportReportPdf(report: ReportData) {
   s.doc.setFillColor(...C.cyan)
   s.doc.rect(0, 0, s.pageW, 1.5, 'F')
 
-  // Brand
-  s.doc.setFontSize(18)
-  s.doc.setFont('helvetica', 'bold')
-  s.doc.setTextColor(...C.cyan)
-  s.doc.text('mixtrue', s.margin, 13)
+  // Brand logo
+  if (logoPng) {
+    // Logo aspect ratio ~4.35:1 (4133x943) — 30mm wide x 6.9mm tall
+    s.doc.addImage(logoPng, 'PNG', s.margin, 5, 30, 6.9)
+  } else {
+    s.doc.setFontSize(18)
+    s.doc.setFont('helvetica', 'bold')
+    s.doc.setTextColor(...C.cyan)
+    s.doc.text('mixtrue', s.margin, 13)
+  }
 
   // Tag
   s.doc.setFontSize(7)
@@ -557,7 +599,7 @@ export function exportReportPdf(report: ReportData) {
   const totalPages: number = (doc.internal as unknown as { getNumberOfPages: () => number }).getNumberOfPages()
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p)
-    drawFooter(s, p, totalPages)
+    drawFooter(s, p, totalPages, logoPng)
   }
 
   doc.save(`mixtrue-report-${report.sessionId.substring(0, 8)}.pdf`)

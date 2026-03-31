@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
+import Logo from '@/components/ui/Logo'
 import { Button } from '@/components/ui/button'
 import PageTransition from '@/components/layout/PageTransition'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -22,13 +23,8 @@ export default function Admin() {
     <PageTransition>
       <div className="min-h-screen bg-bg-primary">
         <nav className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border-subtle">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center">
-              <Activity className="w-5 h-5 text-accent-cyan" />
-            </div>
-            <span className="font-display font-bold text-lg text-text-primary">
-              mixtrue
-            </span>
+          <Link to="/" className="flex items-center">
+            <Logo size="md" />
           </Link>
           <div className="flex items-center gap-3">
             <Button variant="primary" size="sm" onClick={() => setAddUserOpen(true)}>

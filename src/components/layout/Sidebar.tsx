@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Upload, History, CreditCard, Shield, Activity, X } from 'lucide-react'
+import { Upload, History, CreditCard, Shield, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
+import Logo from '@/components/ui/Logo'
 
 const baseNavItems = [
   { path: '/app/upload', label: 'Upload', icon: Upload },
@@ -33,13 +34,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const sidebarContent = (
     <>
       <div className="p-5 border-b border-border-subtle flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 group" onClick={handleNavClick}>
-          <div className="w-9 h-9 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-accent-cyan" />
-          </div>
-          <span className="font-display font-bold text-lg text-text-primary tracking-tight">
-            mixtrue
-          </span>
+        <Link to="/" className="flex items-center group" onClick={handleNavClick}>
+          <Logo size="md" />
         </Link>
         {onClose && (
           <button onClick={onClose} className="md:hidden p-1 text-text-muted hover:text-text-primary" aria-label="Close menu">
